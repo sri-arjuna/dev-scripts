@@ -1,0 +1,7 @@
+echo "DONT USE THIS YET!"
+echo "its just a note ..."
+exit
+
+git rm $(git status|grep del|awk '{print $2}')
+git add $(git status|grep modi|awk '{print $2}')
+

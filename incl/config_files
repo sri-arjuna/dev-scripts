@@ -1,0 +1,23 @@
+#!/bin/bash
+#
+#	Done
+#
+	CONF_SSH=$DIR_BASE/ssh.conf
+#
+#	TODO
+#
+	CONF_GIT=$DIR_BASE/git.conf
+	CONF_RPM=$DIR_BASE/rpm.conf
+	CONF_KOJI=$DIR_BASE/koji.conf
+#
+#	This is a 'sanity' check for folders
+#
+	[[ -d $HOME/.config/dev-scripts ]] || \
+		( tui-bol-dir $HOME/.config/dev-scripts/{prjs,gitinfo} ; ds setup )
+#
+#	Load those conf files, if exists
+#
+	for F in $CONF_GIT $CONF_RPM $CONF_KOJI $CONF_SSH
+	do
+		[[ -f "$F" ]] && source "$F"
+	done

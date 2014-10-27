@@ -1,0 +1,111 @@
+#!/bin/bash
+# ------------------------------------------------------------------------
+#
+# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+#
+# ------------------------------------------------------------------------
+#
+#	Create a new project
+#	project configuration
+#
+#
+#
+#	Variables
+#
+	[[ -d "$DIR_PRJS" ]] || ds setup
+	TITLE="$OA_TITLE - New Project"
+	LIST_Y=""
+	[[ -d "$DIR_CFG" ]] || mkdir -p "$DIR_CFG"
+	case "$2" in
+	"-h"|"--help")	printf "%s\n\n" "Usage: $0 LABEL [/path/to]PACKAGE-NAME" ; exit 0	;;
+	esac
+	[[ -z "$2" ]] && LBL="" || LBL="$2"
+	[[ -z "$3" ]] && PRJ="" || PRJ="$3"
+	#echo "1$1 2$2 3$3 4$4"
+	#[[ -z "$4" ]] && NAME="" || NAME="$4"
+	
+#
+#	Action
+#
+	tui-title "$OA_TITLE - New Project"
+	if [[ -z "$PRJ" ]]
+	then	tui-echo "Lets a create a new project, for this we need some information..."
+		if tui-yesno "Is it an existing project?"
+		then	select PRJ in $(cd "$DIR_PRJS";ls);do break;done
+			PRJ="$DIR_PRJS/$PRJ"
+		else	PRJ=$(tui-read "What is your new projects package name:")
+		fi
+		NAME=$(basename "$PRJ")
+		[[ -z "$LBL" ]] && \
+			LBL=$(tui-read "How will you refer to this project? (lbl)")
+	else	NAME=$(basename "$PRJ")
+		#set -x
+		[[ "." = "$(dirname $PRJ)" ]] && \
+			PRJ="\$DIR_PRJS/$PRJ"
+	fi
+	thisConf="$DIR_CFG/$LBL/$LBL.conf"
+	tui-echo "The projects name is:" "$NAME"
+	tui-echo "Your quick access label is:"  "$LBL"
+	tui-echo "The location of your project is:" "$PRJ"
+	tui-echo "The project configuration is:" "$thisConf"
+	[[ -z "$PRJ" ]] && RET=1 || RET=0
+	tui-status  $RET "Created: $PRJ" || exit $RET
+	
+	# Create the basic config file:
+	tui-bol-dir "$DIR_CFG/$LBL"
+	printf "# Project configuration for \"$NAME\" ($LBL)
+lbl=$LBL
+prj_name=\"$NAME\"
+prj_path=\"$PRJ\"
+" > "$thisConf"
+	. "$thisConf"
+	[[ -d "$prj_path" ]] || mkdir -p "$prj_path"
+	
+	$hasFAS && \
+		tui-yesno "FAS was found, use for this project?" && \
+		printf "useFAS=true\n" >> "$thisConf"
+	
+	MODULES=""
+	tui-title "$OA_TITLE - Modules"
+	tui-echo "Please select which modules to this project apply."
+	# Go to the project menu and read out the folders
+	cd "/usr/share/dev-scripts/menu/prj"
+	LIST=""
+	for l in $(ls|grep -v ^default);do [[ -d $l ]] && LIST+=" $l";done
+	for ENTRY in $LIST;do 
+		#[[ Done = $ENTRY ]] && \
+		#	break || \
+		tui-yesno "Use the module: $ENTRY?" && \
+			MODULES+=" $ENTRY"
+		tui-status $? "Added: $ENTRY"
+	done
+	
+
+	tui-title "$OA_TITLE - Add the required modules"
+	for mod in $MODULES;do
+		#tui-printf "Parsing $mod" "$TUI_WORK"
+		
+		case $mod in
+		"ssh")	# Needs special treatment
+			echo TODO
+			;;
+	#	rpm)	./$mod/add $LBL
+	#		;;
+		*)	sh ./$mod/add "$LBL"
+			;;
+		esac
+	done

@@ -1,0 +1,55 @@
+#!/bin/bash
+# ------------------------------------------------------------------------
+#
+# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+#
+# ------------------------------------------------------------------------
+#
+#	
+	script_version=0.2
+#
+#	Title
+#
+	title="$OA_TITLE - RPM Handler - Add specfile"
+	tui-title "$title ($script_version)"
+#
+#	Variables
+#
+	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
+	then	if [[ -d "$DIR_CFG/$1" ]]
+		then	LBL="$1"
+		else	tui-echo "Please select the label to work with:"
+			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
+		fi
+	else	LBL="$4"
+	fi
+	source "$DIR_CFG/$LBL/$LBL.conf"
+#
+#	Display
+#
+	cd "$prj_path"
+	rpmdev-newspec "$prj_name" > /dev/zero
+	tui-status $? "Created specfile ($prj_path/$prj_name.spec)"
+	RET=$?
+	
+	printf "specfile=\"\$prj_path/\$prj_name.spec\"\n" >> "$DIR_CFG/$LBL/rpm.conf"
+	printf "rpm_builddir=\"\$HOME/rpmbuild\"\n" >> "$CONF_RPM"
+	
+	tui-yesno "Edit the specfile now?" && \
+		tui-edit "$prj_path/$prj_name.spec"
+	
+	exit $RET

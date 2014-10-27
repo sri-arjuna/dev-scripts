@@ -1,0 +1,256 @@
+#!/bin/bash
+#
+#	sea's dev review is aimed to assist developers to  
+#	easy handle their multiple projects.
+#
+#	This script is written with best intention to help, 
+#	but there is NO warranty, garanty and I deny ANY responsiblity
+#	that may or may not affect your system.
+#
+#	Lisence:	GPL v3
+#	Author:		Simon A. Erat (sea)
+#	Release:	2012.06.29
+#	Changed:	2013.08.29
+	script_version=0.5
+#
+#	Title
+#
+	sT "sea's RPM Review Script ($script_version)"
+#
+#	Variables
+#
+	defDir=$XDG_DOWNLOAD_DIR
+	tmpdir=$SEA_CACHE_DIR
+	olddir=$(pwd)
+	isInst=false
+	isSrc=false
+	lbl="" ; tFile=""
+	thisHelp="review ($script_version)
+		\rUsage: st dev release [options] [-exp]
+		\rWhere options are:
+		\r\t-h\tThis screen
+		\r\t-exp\tBETA: Trying to display gathered data within experimental standardized tables (must be 4th argument to 'st')
+		\r\tLABEL\tReview a project you just built (using: st dev prj rpm make LABEL)
+		\r\tFILE\tA file located in \$XDG_DOWNLOAD_DIR or \$(pwd)
+		"
+#
+#	Parse arguments
+#
+	[ "-h" = "$3" ] && \
+		echo -e "$thisHelp" && \
+		return 99
+	if [ -z $3 ]
+	then	# No argument passed
+		sE "Please select what you want to review:"
+		select mode in Downloads myProjects;do break;done
+	
+	else	if [ -d "$SEA_DEV_DIR/$3" ]
+		then	mode=myProjects
+			lbl=$3
+		elif [ -f "$defDir/$3" ]
+		then	mode=Downloads
+			tFile="$defDir/$3"
+		elif  [ -f "$3" ]
+		then	mode=File
+			tFile="$3"
+		else	ReportStatus 1 "Supplied argument: \"$3\" is neither an existing project" "nor a file in $defDir or $(pwd)"
+			return 1
+		fi
+	fi
+	case $mode in
+	myProjects)	[ "" = "$lbl" ] && \
+				lbl=$(PRJ_Select)
+			source $SEA_DEV_DIR/$lbl/conf
+			#select tFile in $(ls $outputdir/*rpm);do break;done
+			worklist=$(ls $outputdir/*rpm)
+			;;
+	Downloads)	[ "" = "$tFile" ] && \
+				select worklist in $(ls $defDir/*rpm);do break;done
+			;;
+	esac
+	[ -z $outputdir ] && \
+		outputdir="$HOME"
+	#echo $outputdir ; exit
+#
+#	Loop if project, 1 pass otherwise
+#	---------------------------------
+#
+	for tFile in $worklist;do
+		sT "Analyzing: $tFile"
+		workdir="$SEA_CACHE_DIR/tmp-$(basename $tFile)"
+		[ -d "$workdir" ] && rm -fr "$workdir"
+		CheckPath "$workdir"
+	
+		sP "Generating data of rpmlint..." "$WORK"
+		cp $tFile "$workdir"
+	
+		reportfile="review-$(basename $tFile).html"
+		tmpfile="$workdir/$(basename $tFile).tmp"
+	
+		cd "$workdir"
+		rpmlint $tFile > $tmpfile
+	
+	#
+	#	Parse Errors and Warnings
+	#
+		for char in W E S;do
+			case $c in
+			E)	title="Errors"	;;
+			W)	title="Warnings"	;;
+			S)	title="Spelling"	;;
+			esac
+			sP "Parsing $title" "$WORK"
+			case $char in
+			W)	grep $char: $tmpfile|grep -v spelling|awk '{print $3" "$4" "$5" "$6" "$7}'|sort  > $tmpfile.$char
+				;;
+			E)	grep $char: $tmpfile|awk '{print $3" "$4" "$5}'|sort > $tmpfile.$char
+				;;
+			S)	grep spelling $tmpfile|awk '{print $4" "$5" "$6" "$7" "$8" "$9" "$10" "$11" "$12}'|sort  > $tmpfile.$char
+				;;
+			esac
+		done
+	#
+	#	Generate output html of rpmlint
+	#
+		[ ! "" = "$(rpm -qa $(basename $tFile))" ] && isInst=true
+		[ ! "" = "$(echo $tFile|grep \.src\.)" ] && isSrc=true
+	
+		echo -e "<html>
+		\r<head><title>Review of: $(basename $tFile), created by Script-Tools ($stVer)</title></head>
+		\r<body>
+		\r\t<h1>Review of: $(basename $tFile)</h1>
+		\r\t<hr>
+		\r\t<ul>
+		\r\t\t<li> <a href=\"#E\">lint: Errors</a>
+		\r\t\t<li> <a href=\"#W\">lint: Warnings</a>
+		\r\t\t<li> <a href=\"#S\">lint: Spellings</a>
+		\r\t\t<li> <a href=\"#F\">cpio: Files</a>" > "$outputdir/$reportfile"
+		if [ true = $isSrc ]
+		then	echo -e "\r\t\t<li> <a href=\"#Spec\">cpio:  Specilfe</a>
+			\r\t\t<li> <a href=\"#T\">cpio:  Tarball</a>" >> "$outputdir/$reportfile"
+		fi
+		if [ true = $isInst ]
+		then	echo -e "\r\t\t<li> <a href=\"#C\">rpm:  Changelog</a>
+			\r\t\t<li> <a href=\"#D\">rpm:  Documentation</a>" >> "$outputdir/$reportfile"
+		fi
+		echo -e "\r\t</ul>
+		<hr>" >> "$outputdir/$reportfile"
+	
+		for c in E W S;do
+			worklist=""
+			tt=$tmpfile.$c
+		
+			case $c in
+			E)	title="Errors"		;;
+			W)	title="Warnings"	;;
+			S)	title="Spelling"	;;
+			D)	title="Documentation"	;;
+			esac
+		
+			sP "Parsing data of $title" "$WORK"
+			echo -e "\n<br><br><a name=\"$c\"> </a>\n<h3>RPMlint: $title ($(cat $tt|wc -l))</h3>" >> "$outputdir/$reportfile"
+		
+			case $c in
+			E)	if [ "-exp" = "$4" ] 
+				then	first=$(cat $tt|awk '{print $1}')
+					for f in $first; do [ "" = "$(echo $worklist|grep $f)" ] && worklist+=" $f";done
+			
+					for w in $worklist;do
+						echo -e "\r\t<table border=0 width=90%>
+						\r\t<tr><td colspan=2 align=center><b><i>$w - Experimental</i></b></td></tr>" >> ""$outputdir/$reportfile""
+				
+						sublist=""
+						subs=$(grep $w $tt|awk '{print $3}')
+						for s in $subs; do [ "" = "$(echo $sublist|grep $s)" ] && sublist+=" $s";done
+				
+						if [ "" = "$(echo $sublist)" ]
+						then	echo -e "\t\t<tr><td colspan=2>$(grep $w $tt|awk '{print $2" "$3" "$4" "$5" "$6}')</td></tr>" >> ""$outputdir/$reportfile""
+						else	for sub in $sublist;do
+								echo -e "\t\t<tr><td><b><i>$sub</i></b></td><td>" >> ""$outputdir/$reportfile""
+								grep $sub "$tt"|awk '{print $2}' >> ""$outputdir/$reportfile""
+								echo -e "</td></tr>" >> ""$outputdir/$reportfile""
+							done
+						fi
+						echo -e "\r\t</table><br><br>" >> ""$outputdir/$reportfile""
+					done
+				else	while read line;do
+						echo -e "$line<br>"  >> "$outputdir/$reportfile"
+					done < $tt
+				fi
+				;;
+			*)	while read line;do
+					echo -e "$line<br>"  >> "$outputdir/$reportfile"
+				done < $tt
+				;;
+			esac
+		
+		done
+		ReportStatus $? "Parsed data of rpmlint"
+	#
+	#	Generate output html of rpm2cpio
+	#
+		sP "Generating data of rpm2cpio..." "$WORK"	
+		rpm2cpio $(basename $tFile) | cpio -idm --quiet 2>&1 || return 1
+		ReportStatus $? "Generated data of rpm2cpio"
+	
+		files=( $(find ./ |grep -v $(basename $tFile)) )
+		echo -e "\n<br><br><a name=\"F\"> </a>\n<h3>RPM2cpio: Files ($(echo ${files[@]}|wc|awk '{print $2}'))</h3>" >> "$outputdir/$reportfile"
+		[ true = $isSrc ] && height=4 || height=30
+		echo -e "\n\t<textarea cols=150 rows=$height>" >> "$outputdir/$reportfile"
+		for tf in "${files[@]}";do
+			echo -e "$tf" >> "$outputdir/$reportfile"
+		done
+		echo -e "\n\t</textarea><br>" >> "$outputdir/$reportfile"
+	#
+	#	Extract src package
+	#
+		if [ true = $isSrc ]
+		then	for f in ${files[@]};do 
+				[ ! "" = "$(echo $f|grep -i \.spec)" ] && \
+					echo -e "\n<br><br>\t<a name=\"Spec\"> </a>\n<h3>RPM2cpio: <a href=\"$f\">Specfile</a></h3>
+				\r\t<textarea cols=150 rows=30>$(cat $workdir/$f)</textarea>" >> "$outputdir/$reportfile"
+				THE_SPEC=$workdir/$f
+			done
+		fi
+	#
+	#	List Changelog & documentation- only if installed
+	#
+		if [ true = $isInst ] 
+		then	sP "Generating data of rpm --changelog..." "$WORK"
+			info="$(rpm --changelog -q $tFile )"
+			ReportStatus $? "Got changelog"
+	
+			echo -e "\n<br><br>\t<a name=\"C\"> </a>\n<h3>RPM: Changelog</h3>
+				\r\t<textarea cols=150 rows=5>$info</textarea>" >> "$outputdir/$reportfile"
+
+			sP "Generating data of rpm --docfiles..." "$WORK"
+			info="$(rpm --docfiles -q $tFile  )"
+			ReportStatus $? "Got docfiles"
+	
+			echo -e "\n<br><br><a name=\"D\"> </a>\n<h3>RPM: Documentation ($(echo $list|wc -l))</h3>
+				\n\t<textarea cols=150 rows=5>$info\n\t</textarea><br>" >> "$outputdir/$reportfile"
+			
+			sP "Retrieving liceses files..." "$WORK"
+			list=$(grep "%doc" $THE_SPEC)
+			ReportStatus $? "got $list"
+		fi
+
+	
+		echo -e "\r\t<br>
+		\r\t<br>
+		\r\t<br>
+		\r\t
+		\r</body>
+		\r</html>" >> "$outputdir/$reportfile"
+		ReportStatus $? "Generated reportfile in: "$outputdir/$reportfile""
+		[ 0 -eq $? ] && \
+			$browser_web "$outputdir/$reportfile"
+		cd "$outputdir"
+		rm -f *.tmp*
+	done
+#
+#	Project loop or sinlge run done
+#	-------------------------------
+#
+	cd $olddir
+	return $?

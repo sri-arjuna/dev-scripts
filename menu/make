@@ -1,0 +1,59 @@
+#!/bin/bash
+# ------------------------------------------------------------------------
+#
+# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+#
+# ------------------------------------------------------------------------
+#
+#	Variables
+#
+	[[ -z "$2" ]] && LBL="" || LBL="$2"
+	[[ -z $LBL ]] || str=" ($LBL)"
+	TASK_LIST=$(cd /usr/share/dev-scripts/menu/prj;ls -l|grep ^d|awk '{print $9}')
+	LIST=""
+#
+#	Display & Action
+#
+	tui-title "Make all project tasks$str"
+	if [[ -z "$LBL" ]]
+	then	tui-echo "Please select a project to make:"
+		select LBL in $(cd "$DIR_CFG";ls);do break;done
+		tui-status $? "Selected: $LBL" || exit $?
+	fi
+	cur="$DIR_CFG/$LBL"
+	source "$cur/$LBL.conf"
+	cd "$cur"
+	for L in $TASK_LIST;do [[ -f "$L.conf" ]] && LIST+=" $L";done;
+	
+	for T in $LIST;do
+	case $T in
+	rpm)	ds prj rpm make $LBL
+		;;
+	git)	tui-echo "TODO: $T"
+		;;
+	sf)	tui-echo "TODO: $T"
+		;;
+	build)	tui-echo "TODO: $T"
+		;;
+	ftp)	tui-echo "TODO: $T"
+		;;
+	repo)	tui-echo "TODO: $T"
+		;;
+#	RPM)	tui-echo "TODO: $T"
+#		;;	
+	esac
+	done

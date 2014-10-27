@@ -1,0 +1,77 @@
+#!/bin/bash
+# ------------------------------------------------------------------------
+#
+# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+#
+# ------------------------------------------------------------------------
+#
+#	Descriptional text here...
+#	and here...
+#
+#
+#
+#	Variables
+#
+	#set -x
+	STRENGTH="768 1024 2048 4096 8192"
+	COMMENT=""
+	nocom=""
+	PASSWORD=
+	nopw=""
+#
+#	Action
+#
+	tui-title "$OA_TITLE - SSH"
+#	[[ -f $CONF_SSH ]] && tui-edit "$CONF_SSH" && exit 
+	
+	tui-echo "Please select the encryptions strength:"
+	select BIT in $STRENGTH;do break;done
+	tui-echo "Selected:" "$BIT"
+	tui-echo
+	
+	tui-yesno "Do you want to add a comment?" && \
+		COMMENT=$(tui-read "What is your comment:")
+	tui-echo
+	
+	tui-echo "Do you want to use a password with it?" "Must be at least 4 chars!"
+	if tui-yesno "If left empty, it'll ask you upon creating it:"
+	then	PASSWORD=$(tui-read -p "Please type your password:")
+		tui-status $? "Password recieved"
+	fi
+	tui-echo
+	
+	if tui-yesno "Save the data for later?"
+	then	tui-header "WRITING $CONF_SSH" "its not the first time i do this check"
+		cat > $CONF_SSH << EOF
+BIT=$BIT
+COMMENT="$COMMENT"
+PASSWORD="$PASSWORD"
+EOF
+		tui-status $? "Saved SSH Configuration"
+	else	tui-echo "Generating SSH file..." "$TUI_WORK"
+		[[ -z $COMMENT ]] || nocom="-C \"$COMMENT\""
+		[[ -z $PASSWORD ]] || nopw="-N \"$PASSWORD\""
+		ssh-keygen  -b  $BIT \
+				$nopw \
+				$nocom \
+				-f $ssh_file
+		tui-status $? "Created a new SSH KEY."
+		exit $?
+	fi
+	
+	tui-yesno "Create the file now?" && \
+			ds ssh make

@@ -1,0 +1,2 @@
+The folders in your project dir will be referred here as 'lbl' as in label.
+You may start tasks directly by passing 'ds TASK [subtask] lbl'

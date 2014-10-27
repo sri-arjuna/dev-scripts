@@ -1,0 +1,151 @@
+#!/bin/bash
+# ------------------------------------------------------------------------
+#
+# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License (GPL) as published
+# by the Free Software Foundation, either version shipped with the script, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License (GPL) for more details.
+#
+# You should have received a copy of the GNU General Public License (LGPL)
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+#
+# ------------------------------------------------------------------------
+#
+#	File:		setup
+#	Author: 	Simon Arjuna Erat (sea)
+#	Contact:	erat.simon@gmail.com
+#	License:	GNU General Public License (LGPL)
+#	Created:	2014.09.13
+#	Changed:	2014.09.13
+	script_version=0.0.1
+	TITLE="Dev-Scripts - Setup"
+#	Description:	Set up the project main settings
+#			
+#
+#
+#	Script Environment
+#
+	ME="${0##*/}"				# Basename of setup
+	ME="${ME/.sh/}"				# Cut off .sh extension
+	APP=dev-scripts
+	tempfile="$CONFIG_DIR/$APP.tmp"		# Tempfile
+	CONFIG_DIR=$HOME/.config/dev-scripts
+	CONFIG=$CONFIG_DIR/dev-scripts.conf
+#
+#	Help text
+#
+	write_git_info() { #
+	#
+	#
+		this_dir=$CONFIG_DIR/gitinfo
+		[[ -d $this_dir ]]  || mkdir -p $this_dir
+		
+		for T in gh sf
+		do	# Gather info of each file
+			
+			case $T in
+			gh)	# Git Hub
+				name=GitHub
+				URL=https://github.com
+				;;
+			sf)	# Source Forge
+				name=SourceForge
+				URL=http://sourceforge.net/projects/
+				;;
+		#	gh)	# 
+				
+		#		;;
+		#	gh)	# 
+				
+		#		;;
+			esac
+			cat > $this_dir/$name << EOF
+name=$name
+URL=$URL
+EOF
+		done
+	}
+	write_git_info
+#
+#	Default configuration
+#
+	[[ -d $CONFIG_DIR ]] || mkdir -p $CONFIG_DIR
+	[[ -f $CONFIG ]] || cat > $CONFIG << EOF
+# $ME configuration
+DIR_PRJS=\$HOME/Projects
+DIR_BASE=\$HOME/.config/dev-scripts
+DIR_CFG=\$DIR_BASE/prjs
+EOF
+	[[ -f $CONF_GIT ]] || cat > $CONF_GIT << EOF
+GIT_ID=github
+GIT_USER=$USER
+GIT_URL=https://github.com
+EOF
+	source $CONFIG
+	source $CONF_GIT
+	#source /usr/share/dev-scripts/incl/load_env
+	source /home/sea/prjs/dev-scripts/incl/load_env
+#
+#	Catching Arguments
+#
+	# A ':' after a char indicates that this option requires an argument
+	while getopts "h" opt
+	do 	case $opt in
+		h)	printf "$help_text"
+			exit $RET_HELP
+			;;
+		esac
+	done
+	shift $(($OPTIND - 1))
+#
+#	Display & Action
+#
+	#tui-header "${APP^}:$ME ($script_version)" "$(date +'%F %T')"
+	tui-title "$TITLE"
+	tui-echo "Hello $USER, welcome to set up your developement environment"
+	tui-echo "You will be asked a few questions and introduced to this standard"
+	tui-echo
+	
+	tui-echo "Where is your projects holding dir?"
+	newdir=$(tui-read "Leave empty for: '$DIR_PRJS'")
+	[[ -z $newdir ]] || tui-value-set $CONFIG DIR_PRJS $newdir
+	tui-echo
+	
+	#echo $CONFIG_DIR
+	tui-echo "Please select your default git handler"
+	select newVAL in $(cd "$CONFIG_DIR/gitinfo/" ; ls );do break;done
+	[[ ! -z $newVAL ]] && \
+		source $CONFIG_DIR/gitinfo/$newVAL && \
+		tui-value-set $CONF_GIT GIT_ID $name && \
+		tui-value-set $CONF_GIT GIT_URL $URL
+	tui-echo
+	
+	tui-echo "What is your GIT Username on $name?"
+	newVAL=$(tui-read "Leave empty for '$GIT_USER':")
+	[[ -z $newVAL ]] || tui-value-set $CONF_GIT GIT_USER $newVAL
+	tui-echo
+	
+	#tui-echo "
+	if tui-yesno "Do you have a FAS account?"
+	then	tui-value-set $CONFIG hasFAS true
+		tui-yesno "Treat all projects as FAS projects?" && \
+			ret=true || ret=false
+		tui-value-set $CONFIG useFAS $ret
+	fi
+	tui-echo
+	
+	exit
+	
+	tui-echo ""
+	newVAL=$(tui-read "")
+	[[ -z $newVAL ]] || tui-value-set $CONFIG DIR_PRJS $newVAL
+	tui-echo
+	

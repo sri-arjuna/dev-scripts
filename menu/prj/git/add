@@ -1,0 +1,145 @@
+#!/bin/bash
+# ------------------------------------------------------------------------
+#
+# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+#
+# ------------------------------------------------------------------------
+#
+#	
+	script_version=0.3
+#
+#	Title
+#
+	title="$OA_TITLE - GIT Handler - Add repositry"
+	tui-title "$title ($script_version)"
+	[[ -f "$CONF_GIT" ]] || \
+		(tui-wait 5s "Please take care to provide all required data...";ds setup)
+	source "$CONF_GIT" || exit 1
+#
+#	Variables
+#
+	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
+	then	if [[ -d "$DIR_CFG/$1" ]]
+		then	LBL="$1"
+		else	tui-echo "Please select the label to work with:"
+			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
+		fi
+	else	LBL="$4"
+	fi
+	source "$DIR_CFG/$LBL/$LBL.conf"
+	source "$DIR_CFG/git.conf"
+	. /etc/tui/apps.conf
+	REQ_ADD=false
+	README="$prj_name
+======
+
+Example Readme
+-----
+
+*one*
+
+**two**
+
+***three***
+
+
+	Quote/code
+	text
+
+  [*] list
+  [*] list
+  [*] list
+  [*] list
+
+	
+"
+#
+#	Display
+#
+	prj_git=""
+	tui-echo "What is the according GIT project name?"
+	prj_git=$(tui-read "Leave empty for: '$prj_name'")
+	[[ -z "$prj_git" ]] && prj_git="$prj_name"
+	printf "prj_git=$prj_git\n" >> "$DIR_CFG/$lbl/$lbl.conf"
+	
+	case $GIT_ID in
+	GitHub)		URL="$GIT_URL/$GIT_USER/$prj_git.git"
+			URL2="$GIT_URL/new"	;;
+	SourcceForge)	URL="$GIT_URL/p/$prj_git/code"
+			URL2="$GIT_URL/p/add_project"	;;
+	esac	
+	
+	
+	
+	
+	cd "$prj_path"
+	
+	if [[ "" = "$(which ls)" ]]
+	then	# Its all empty
+		tui-echo "Please select current situation:"
+		A="Empty project"
+		B="Project exists already"
+		C="Project is remote ONLY"
+		select situ in "$A" "$B" "$C";do
+		case "$situ" in
+		"$A")	tui-yesno "Do you want to create a template README.md?" && \
+				printf "$README" > "README.md"
+			tui-yesno "Do you want to add a GPLv3 license file?" && \
+				wget -o "LICENSE" "http://www.gnu.org/licenses/gpl.txt"
+			tui-yesno "Do you want to add a (tui) script application?" && \
+				tui-new-script -p "./$prj_name.sh"
+			git init .
+			git add .
+			git commit -m "Init repositry"
+			tui-status $? "Created GIT repositry for $prj_name"
+			REQ_ADD=true
+			break
+			;;
+		"$B")	tui-printf "Downloading repositry..."
+			git clone "$URL" "$prj_name" > /dev/zero
+			tui-status $? "Created GIT repositry for $prj_name"
+			RET=$?
+			cd "$prj_name"
+			;;
+		"$C")	tui-echo "TODO handling remote only projects... vicious!!" "$TUI_TODO"
+			tui-echo "Nothing to do? maybe..."
+			;;
+		esac
+		done
+	else	# There is already stuff in here
+		git init .
+		git add .
+		git commit -m "Init repositry"
+		tui-status $? "Created GIT repositry for $prj_name"
+		RET=$?
+		REQ_ADD=true
+	fi
+	
+	if $REQ_ADD
+	then	#echo "$BROWSER -- $BROWSER_GUI -- $URL -- $URL2"
+		[[ ! -z "$URL2" ]]  &&  $BROWSER_GUI "$URL2"
+		cat >> "$prj_path/.git/config" << EOF
+[remote "origin"]
+	url = $URL
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
+EOF
+	fi
+	
+	exit $RET

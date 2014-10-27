@@ -1,0 +1,18 @@
+Arguments for sub entries: st dev
+RPM:          LABEL      m
+SF:           LABEL      b|d|m|u [ NEWBRANCH] 
+SSH:          LABEL      c|n|r
+  
+rpm m:        RPM make
+sf b:         Sourceforge branch [ NEWBRANCH ]
+sf d:         Sourceforge download code
+sf m:         Sourceforge merge [ NEWBRANCH ]
+sf lb:        Sourceforge list branches
+sf u:         Sourceforge upload code
+ssh c:        SSH connect
+ssh n:        SSH new 
+ssh r:        SSH remove
+
+Example:      $sst $1 rpm m
+              Will make a rpm package, if you have only 1 project.
+              If you have multiple projects, you should provide its LABEL.
