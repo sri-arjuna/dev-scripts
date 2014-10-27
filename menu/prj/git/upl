@@ -47,7 +47,9 @@
 	cd "$prj_path"
 	if [[ "" = "$(git status|grep -e del -e del)" ]]
 	then	git push origin master
+		cd "$oPWD"
 		exit $?
 	else	tui-status $? "There are uncommited changes"
+		git status
 		exit $?
 	fi

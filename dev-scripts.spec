@@ -1,6 +1,6 @@
 Name:        dev-scripts
 Version:     0.0.4
-Release:     0%{?dist}
+Release:     1%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
@@ -11,7 +11,7 @@ Source0:     http://sea.fedorapeople.org/review/%{name}/%{name}-%{version}.tar.g
 BuildArch:   noarch
 
 Requires:    tui
-Requires:    fas
+#Requires:    fas
 #Requires:    fedora-packager
 
 

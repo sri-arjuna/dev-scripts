@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.3
+	script_version=0.4
 #
 #	Title
 #
@@ -74,7 +74,7 @@ Example Readme
 	tui-echo "What is the according GIT project name?"
 	prj_git=$(tui-read "Leave empty for: '$prj_name'")
 	[[ -z "$prj_git" ]] && prj_git="$prj_name"
-	printf "prj_git=$prj_git\n" >> "$DIR_CFG/$lbl/$lbl.conf"
+	printf "prj_git=$prj_git\n" >> "$DIR_CFG/$LBL/$LBL.conf"
 	
 	case $GIT_ID in
 	GitHub)		URL="$GIT_URL/$GIT_USER/$prj_git.git"
@@ -83,30 +83,33 @@ Example Readme
 			URL2="$GIT_URL/p/add_project"	;;
 	esac	
 	
-	
-	
-	
 	cd "$prj_path"
-	
 	if [[ "" = "$(which ls)" ]]
 	then	# Its all empty
+		echo THAT
 		tui-echo "Please select current situation:"
 		A="Empty project"
 		B="Project exists already"
 		C="Project is remote ONLY"
 		select situ in "$A" "$B" "$C";do
 		case "$situ" in
-		"$A")	tui-yesno "Do you want to create a template README.md?" && \
-				printf "$README" > "README.md"
+		"$A")	REQ_ADD=true
+			tui-yesno "Do you want to create a template README.md?" && \
+				printf "$README" > "README.md" && \
+				tui-yesno "Edit README.md now?" && \
+				tui-edit README.md && \
+				tui-press
 			tui-yesno "Do you want to add a GPLv3 license file?" && \
 				wget -o "LICENSE" "http://www.gnu.org/licenses/gpl.txt"
 			tui-yesno "Do you want to add a (tui) script application?" && \
 				tui-new-script -p "./$prj_name.sh"
+			[[ -f "$prj_name.spec" ]] && \
+				tui-edit "$prj_name.spec" && \
+				tui-press
 			git init .
 			git add .
 			git commit -m "Init repositry"
 			tui-status $? "Created GIT repositry for $prj_name"
-			REQ_ADD=true
 			break
 			;;
 		"$B")	tui-printf "Downloading repositry..."
@@ -121,17 +124,25 @@ Example Readme
 		esac
 		done
 	else	# There is already stuff in here
+		REQ_ADD=true
+		echo
+		echo THIS
+		echo
+		[[ -f "$prj_name.spec" ]] && tui-edit "$prj_name.spec" && tui-press
 		git init .
 		git add .
 		git commit -m "Init repositry"
 		tui-status $? "Created GIT repositry for $prj_name"
 		RET=$?
-		REQ_ADD=true
+		
 	fi
 	
-	if $REQ_ADD
+	tui-status $RET "$REQ_ADD"
+	
+	if $REQ_ADD || ! grep origin "$prj_path/.git/config"
 	then	#echo "$BROWSER -- $BROWSER_GUI -- $URL -- $URL2"
-		[[ ! -z "$URL2" ]]  &&  $BROWSER_GUI "$URL2"
+		[[ ! -z "$URL2" ]] && $BROWSER_GUI "$URL2"
+		#[[ ! -z "$URL" ]] && \
 		cat >> "$prj_path/.git/config" << EOF
 [remote "origin"]
 	url = $URL

@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.1
+	script_version=0.2
 #
 #	Title
 #
@@ -41,4 +41,4 @@
 	else	LBL="$4"
 	fi
 	source "$DIR_CFG/$LBL/$LBL.conf"
-	tui-edit "$prj_path/.git/config"
+	tui-edit "$prj_path/.git/config" "$CONF_GIT"
