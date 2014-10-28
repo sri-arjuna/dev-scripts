@@ -43,13 +43,14 @@ mkdir -p     %{buildroot}%{_bindir} \
 mv %{name}/*                          %{buildroot}%{_datarootdir}/%{name}/
 cd %{buildroot}
 ln -sf %{_datarootdir}/%{name}/ds.sh  %{buildroot}%{_bindir}/ds
-ln -sf %{_datarootdir}/%{name}/ds.1   %{buildroot}%{_mandir}/man1/
+ln -sf %{_datarootdir}/%{name}/man/*.1   %{buildroot}%{_mandir}/man1/
 
 %clean
 rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)   
+%doc %{_mandir}/man1/dev-scripts.1.gz
 %doc %{_mandir}/man1/ds*.1.gz
 %{_datarootdir}/%{name}/
 %{_bindir}/ds
