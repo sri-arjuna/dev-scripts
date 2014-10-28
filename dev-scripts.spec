@@ -56,7 +56,7 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Tue Oct 28 - Simon A. Erat - erat.simon@gmail.com - 0.0.5
+* Tue Oct 28 2014 - Simon A. Erat - erat.simon@gmail.com - 0.0.5
 - Added manpage
 
 * Thu Sep 18 2014 - Simon A. Erat - erat.simon@gmail.com - 0.0.3
