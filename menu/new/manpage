@@ -1,0 +1,163 @@
+#!/bin/bash
+# ------------------------------------------------------------------------
+#
+# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+#
+# ------------------------------------------------------------------------
+#
+#	
+	script_version=0.2
+#
+#	Title
+#
+	title="$OA_TITLE - New - Manpage"
+	tui-title "$title ($script_version)"
+#
+#	Variables
+#
+	source tui
+	name=""
+	TMP="$TUI_TEMP_FILE"
+	if [[ -z "$3" ]] # || [[ ! -z "$LBL" ]]
+	then	if [[ -d "$DIR_CFG/$1" ]]
+		then	LBL="$1"
+			[[ -z "$2" ]] || name="$2"
+		else	tui-echo "Please select the label to work with:"
+			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
+		fi
+	else	LBL="$3"
+		[[ -z "$4" ]] || name="$4"
+	fi
+	source "$DIR_CFG/$LBL/$LBL.conf"
+
+	tui-echo "If you want your name, email adress, homepage and preferred license to be diffrent, pleasse call 'tui config'"
+
+	DEST="$prj_path/man/$name"
+	if [[ man = "$(basename $DEST)" ]]
+	then	name=$(tui-read "What is the manpage its name?")
+		DEST+="$name"
+	fi
+	# Check if the manpage ends with a number
+	printf "$DEST" | grep \.[0-9] || DEST+=".1"
+	name="$(basename ${DEST:0:(-2)})"
+	[[ -f "$prj_path/LICENSE" ]] && LOCAL_LIC="A local copy of the license should be at $prj_path/LICENSE
+.br
+"
+	if [[ -f "$DEST" ]]
+	then	tui-yesno "The manpage for '$name' already exists, overwrite?" || exit 1
+	fi
+cat > "$DEST" << EOF
+.ig
+$prj_name - $name
+Copyright (C) $(date +'%B %Y') by $USER_NAME, $USER_EMAIL
+.. ....................................................
+
+.TH "$name" 1 "$(date +'%F'|sed s/'\.'/' '/g)" "${name^} Version 0.1"
+
+
+.SH NAME
+$name \- shortinfo
+
+
+.SH SYNOPSIS
+.SY $name
+.OP options
+.RI [ arguments .\|.\|.]
+
+
+.SH DESCRIPTION
+This describes the
+.B $name
+programm and the
+.I options
+available to it.
+.br
+
+As well as the main purpose of all this.
+
+
+.SH OPTIONS
+Some
+.B bold
+and
+.I italic
+text
+.IP "\fB-XY\fP"
+does this
+.IP "\fB-YX\fP arg"
+does that
+
+.IP Optionals:
+.RS 4
+Indented text
+.br
+
+.OP \-a
+	Description
+
+.OP \-b arg
+Description
+
+
+.SH FILES
+.IP ~/.config/$name/$name.conf
+Main configuration file
+.RS 4
+Its description\&.
+.RE
+more text
+
+
+.SH SEEALSO
+.PP
+.B command
+(1),
+.B cmd
+(8)
+
+
+.SH LICENSE
+${LOCAL_LIC}$DEFAULT_LICENSE
+.br
+$DEFAULT_LICENSE_URL
+
+
+.SH "KNOW BUGS"
+.IP "item 1"
+.br
+text of item 1
+.IP "item 2"
+.br
+text of item 2
+
+
+.SH BUGREPORTS
+Please visit "$USER_HOMEPAGE" to report bugs
+
+
+.SH AUTHORS
+$USER_NAME, Organisation/Club/Title
+.br
+$USER_HOMEPAGE
+
+
+.SH CONTACT
+$USER_NAME, $USER_EMAIL
+.br
+$USER_HOMEPAGE
+EOF
+	tui-status $? "Created manpage:" "$DEST"

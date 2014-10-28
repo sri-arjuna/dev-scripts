@@ -1,0 +1,125 @@
+.ig
+dev-scripts - dev-scripts
+Copyright (C) Oktober 2014 by Simon Arjuna Erat, < erat D0T simon AT gmail D0T com >
+.. ....................................................
+
+.TH "dev-scripts" 1 "2014-10-28" "Developer Scripts - Version 0.3"
+
+
+.SH NAME
+dev-scripts \- Is a little project manager and assistant for developers and package maintainers
+
+
+.SH SYNOPSIS
+.SY ds
+.OP sections ... 
+.RI task .\|.\|.
+.OP options-to-task ...
+.br
+.IP \fBExamples:\fP
+.B ds
+setup
+.br
+.B ds
+make
+.I PROJECTLABEL
+.br
+.B ds
+.I prj 
+edit
+.I PROJECTLABEL
+.br
+.B ds
+.I prj rpm
+make
+.I PROJECTLABEL
+
+
+.SH DESCRIPTION
+These
+.B Developer-Scripts
+are the results of several scripts of which each just accomplishes a single task.
+.br
+But since they all refer to the very same configuration files, it attempts to reduce required interaction and should ease the initial effort to get the first usable files.
+.br
+
+In the end,
+.B ds make PROJECTLABEL
+should do the following tasks (if applicable) with your project:
+.PP
+* Compile code to binary
+.br
+* Code upload, stop for interaction if required
+.br
+* Package it to: rpm
+.br
+* Create a rpm Repositry
+.br
+
+
+.SH FILES
+.PP
+.IP ~/.config/dev-scripts/dev-scripts.conf
+Provides some basic location variables: DIR_PRJS DIR_BASE DIR_CFG
+.IP ~/.config/dev-scripts/git.conf
+Provides the provider and git-user name.
+.IP ~/.config/dev-scripts/ssh.conf
+Provides the default values for ssh. 
+.B Attention
+the password will be stored in plaintext.
+.IP ~/.config/dev-scripts/prjs/<PROJECTLABEL>
+.RS 4
+.IP ./PROJECTLABEL.conf
+Provides the projects name, path and whether or not it is a FAS project.
+.br
+Also GIT will retrieve its
+.B git_name
+from it.
+.IP ./rpm.conf
+Provides the projects specfile and default builddir.
+
+
+
+.SH SEEALSO
+.B gcc
+(1),
+.B git
+(1),
+.B man
+(1),
+.B rpmbuild
+(8),
+.B rpmlint
+(1),
+.B ssh
+(1),
+.B tui
+(1),
+
+
+
+.SH LICENSE
+GNU General Public License (GPL)
+.br
+http://www.gnu.org/licenses/gpl.html
+
+
+.SH "KNOW BUGS"
+.IP "item 1"
+.br
+text of item 1
+.IP "item 2"
+.br
+text of item 2
+
+
+.SH BUGREPORTS
+Please visit "" to report bugs
+
+
+.SH AUTHORS
+Simon Arjuna Erat, < erat D0T simon AT gmail D0T com >
+.br
+Initial template
+.br
+
