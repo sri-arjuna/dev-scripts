@@ -1,6 +1,6 @@
 Name:        dev-scripts
-Version:     0.0.4
-Release:     1%{?dist}
+Version:     0.0.5
+Release:     0%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
@@ -56,6 +56,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Oct 28 - Simon A. Erat - erat.simon@gmail.com - 0.0.5
+- Added manpage
+
 * Thu Sep 18 2014 - Simon A. Erat - erat.simon@gmail.com - 0.0.3
 - git and rpm modules (add,make,edit) seem stable... 
 
