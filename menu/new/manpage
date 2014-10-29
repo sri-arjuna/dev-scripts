@@ -59,6 +59,7 @@
 "
 	if [[ -f "$DEST" ]]
 	then	tui-yesno "The manpage for '$name' already exists, overwrite?" || exit 1
+	else 	[[ -d "$(dirname $DEST)" ]] || mkdir -p "$(dirname $DEST)"
 	fi
 cat > "$DEST" << EOF
 .ig

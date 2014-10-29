@@ -1,10 +1,10 @@
 Name:        dev-scripts
 Version:     0.0.5
-Release:     0%{?dist}
+Release:     1%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
-#URL:         https://github.com/sri-arjuna/dev-scripts
+URL:         https://github.com/sri-arjuna/dev-scripts
 #Source0:     https://github.com/sri-arjuna/dev-scripts/archive/master.zip
 Source0:     http://sea.fedorapeople.org/review/%{name}/%{name}-%{version}.tar.gz
 
@@ -40,10 +40,12 @@ rm -rf       %{buildroot}
 mkdir -p     %{buildroot}%{_bindir} \
                      %{buildroot}%{_mandir}/man1 \
                      %{buildroot}%{_datarootdir}/%{name}
+# Move docs
+mv %{name}/man/*        %{buildroot}%{_mandir}/man1/
+rmdir %{name}/man
 mv %{name}/*                          %{buildroot}%{_datarootdir}/%{name}/
 cd %{buildroot}
-ln -sf %{_datarootdir}/%{name}/ds.sh  %{buildroot}%{_bindir}/ds
-ln -sf %{_datarootdir}/%{name}/man/*.1   %{buildroot}%{_mandir}/man1/
+ln -sf %{_datarootdir}/%{name}/ds.sh  %{buildroot}%{_bindir}/ds 
 
 %clean
 rm -rf %{buildroot}
@@ -59,6 +61,7 @@ rm -rf %{buildroot}
 %changelog
 * Tue Oct 28 2014 - Simon A. Erat - erat.simon@gmail.com - 0.0.5
 - Added manpage
+- Hotfix manpage
 
 * Thu Sep 18 2014 - Simon A. Erat - erat.simon@gmail.com - 0.0.3
 - git and rpm modules (add,make,edit) seem stable... 
