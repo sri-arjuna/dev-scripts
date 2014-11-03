@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.1
+	script_version=0.2
 #
 #	Title
 #
@@ -37,7 +37,9 @@
 		fi
 	else	LBL="$4"
 	fi
+	source "$DIR_CFG/$LBL/$LBL.conf"
 	source "$DIR_CFG/$LBL/rpm.conf"
+	source "$CONF_RPM"
 #
 #	Display
 #

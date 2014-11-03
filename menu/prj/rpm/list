@@ -49,7 +49,7 @@
 	
 	
 	source "$DIR_CFG/$LBL/rpm.conf"
-	OPTS="-ba"
+	source "$CONF_RPM"
 	VER=$(grep Version "$specfile"|awk '{print $2}')
 	TARBALL="$prj_name-$VER.tar.gz"
 	DEST="$rpm_builddir"

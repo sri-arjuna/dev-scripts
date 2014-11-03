@@ -19,5 +19,5 @@
 #
 	for F in $CONF_GIT $CONF_RPM $CONF_KOJI $CONF_SSH
 	do
-		[[ -f "$F" ]] && source "$F"
+		[[ -f "$F" ]] && source "$F" && printf "."
 	done

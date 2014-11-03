@@ -27,7 +27,7 @@
 #	Variables
 #
 	[[ -d "$DIR_PRJS" ]] || ds setup
-	TITLE="$OA_TITLE - New Project"
+	TITLE="$OA_TITLE - New Project 1"
 	LIST_Y=""
 	[[ -d "$DIR_CFG" ]] || mkdir -p "$DIR_CFG"
 	case "$2" in
@@ -47,7 +47,8 @@
 		if tui-yesno "Is it an existing project?"
 		then	select PRJ in $(cd "$DIR_PRJS";ls);do break;done
 			PRJ="$DIR_PRJS/$PRJ"
-		else	PRJ=$(tui-read "What is your new projects package name:")
+		else	PRJ=$(tui-read "What is your new projects name:")
+			[[ -d "$DIR_PRJS/$PRJ" ]] || mkdir -p "$DIR_PRJS/$PRJ"
 		fi
 		NAME=$(basename "$PRJ")
 		[[ -z "$LBL" ]] && \
@@ -55,20 +56,23 @@
 	else	NAME=$(basename "$PRJ")
 		#set -x
 		[[ "." = "$(dirname $PRJ)" ]] && \
-			PRJ="\$DIR_PRJS/$PRJ"
+			PRJ="$DIR_PRJS/$PRJ"
 	fi
+	[[ "$PRJ" = "$NAME" ]] && \
+		PRJ="$DIR_PRJS/$PRJ"
+	
 	thisConf="$DIR_CFG/$LBL/$LBL.conf"
 	tui-echo "The projects name is:" "$NAME"
 	tui-echo "Your quick access label is:"  "$LBL"
 	tui-echo "The location of your project is:" "$PRJ"
 	tui-echo "The project configuration is:" "$thisConf"
 	[[ -z "$PRJ" ]] && RET=1 || RET=0
+	tui-bol-dir "$DIR_CFG/$LBL"
 	tui-status  $RET "Created: $PRJ" || exit $RET
 	
 	# Create the basic config file:
-	tui-bol-dir "$DIR_CFG/$LBL"
+	
 	printf "# Project configuration for \"$NAME\" ($LBL)
-lbl=$LBL
 prj_name=\"$NAME\"
 prj_path=\"$PRJ\"
 " > "$thisConf"
@@ -109,3 +113,4 @@ prj_path=\"$PRJ\"
 			;;
 		esac
 	done
+	cd "/usr/share/dev-scripts/menu"

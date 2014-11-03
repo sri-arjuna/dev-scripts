@@ -1,0 +1,147 @@
+#!/bin/bash
+# ------------------------------------------------------------------------
+#
+# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+#
+# ------------------------------------------------------------------------
+#
+#	
+	script_version=0.5
+#
+#	Title
+#
+	title="$OA_TITLE - Kickstart - Add template file"
+	tui-title "$title ($script_version)"
+#
+#	Variables
+#
+	#echo "1$1 2$2 3$3 4$4"
+	
+	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
+	then	if [[ -d "$DIR_CFG/$1" ]]
+		then	LBL="$1"
+		else	tui-echo "Please select the label to work with:"
+			select LBL in $(cd "$DIR_CFG";ls);do break;done
+		fi
+		#echo ba
+	else	LBL="$4"
+		#echo bl
+	fi
+	source "$DIR_CFG/$LBL/$LBL.conf"
+	allConf="$DIR_BASE/livecd.conf"
+	thisConf="$DIR_CFG/$LBL/livecd.conf"
+	template_dir=/usr/share/dev-scripts/templates/ks
+	#template_dir=$HOME/prjs/dev-scripts/templates/ks
+#
+#	Display
+#
+	tui-title "Create new kickstart file"
+	
+	if [[ ! -f "$allConf" ]]
+	then	# The settings are not yet created
+		# Gather info
+		tui-echo "Which template to use?" "The 'user' one will also use the anaconda-ks from the installation (BETA)"
+		select template in livecd livecd_user;do
+			template="$template_dir/$template.ks"
+			break
+		done
+		
+		if tui-yesno "Use '$LANG' for language?"
+		then	tLang="$LANG"
+		else	tLang=$(tui-read "Please enter your language value:")
+		fi
+	
+		keyb=$(setxkbmap -query | grep layout|awk '{print $2}')
+		if tui-yesno "Use '$keyb' for keyboard?"
+		then	tKeyb="$keyb"
+		else	tui-echo "Please select your keyboard layout below."
+			select tKeyb in $(localectl list-keymaps);do break;done
+		fi
+	
+		TZ="$(date +%Z%z)"
+		if tui-yesno "Use '$TZ' for timezone?"
+		then	tTime="$TZ"
+		else	tTime=$(tui-read "Please enter your timezone value:")
+		fi
+		
+		DE=lxde
+		# o="$IFS";IFS="-";ls |grep pack|while read f DE none;do echo $DE;done;IFS="$o"
+		if ! tui-yesno "Use '$DE' as Desktop Environment?"
+		then	tui-echo "Please select your desktop environment (deskop=gnome):"
+			#o="$IFS";IFS="-"
+			DEs=$(ls /usr/share/spin-kickstarts/|grep livecd|while read line;do echo ${line:14:(-3)};done)
+			#IFS="$o"
+			select DE in $DEs;do break;done
+		fi
+		
+		printf '%s\n' "# Kickstart defaults for all projects" \
+			"language=\"$tLang\"" \
+			"keyboard=\"$tKeyb\"" \
+			"timezone=\"$tTime\"" \
+			"DE=\"$DE\"" \
+			"template=\"$template\""> "$allConf"
+	fi
+	source "$allConf"
+	
+	# Create the file
+	cd "$prj_path"
+	if [[ -f "$prj_name.ks" ]]
+	then	if tui-yesno "File already exists, overwrite?"
+		then	[[ -z "$template" ]] && template=$template_dir/livecd.ks
+			source "$template" > "$prj_name.ks" 
+		fi
+	else	source "$template" > "$prj_name.ks" 
+	fi
+	printf '%s\n' "# Kickstart configuration for $prj_name" "kickstart=\"$prj_path/$prj_name.ks\"" > "$thisConf"
+	
+	ARCH=32
+	if [[ $(uname -m) = x86_64 ]]
+	then	tui-yesno "Default arch target 64bit?" && \
+		do32bit=false || do32bit=true
+		# This is only required for 64 bit systems
+		bitstring="do32bit=$do32bit"
+		ARCH=64
+	fi
+	tui-status 111 "When making an iso, the script will automaticly append: ${ARCH}bit to the iso filename"
+	
+	rel=$(grep -i version_id /etc/os-release)
+	rel=${rel/*=}
+	echo $rel ; exit
+	prj_release=$(tui-read "What is the default release version: ($rel) ")
+	[[ -z "$prj_release" ]] && prj_release=$rel
+	
+	tui-status 111 "No  spaces allowed in FSLABEL!"
+	prj_label=$(tui-read "What is the FSLABEL:($prj_name)" )
+	[[ -z "$prj_label" ]] && prj_label=${prj_name/ /_}
+	
+	prj_title=$(tui-read "What is the TITLE:($prj_name) ")
+	[[ -z "$prj_title" ]] && prj_title="$prj_name"
+	
+	prj_outpath=$(tui-read "What is the output directory:($HOME) ")
+	[[ -z "$prj_outpath" ]] && prj_outpath=$HOME
+	
+	tui-yesno "Use a specific temp directory?" && \
+		prj_tempdir=$(tui-read "What is the temporary directory?")
+	bitstring=""
+	
+	# "opts=$opt"
+	printf '%s\n'   "prj_release=\"$prj_release\"" \
+			"prj_label=\"$prj_label\"" \
+			"prj_title=\"$prj_title\"" \
+			"prj_outpath=\"$prj_outpath\"" \
+			"prj_tempdir=\"$prj_tempdir\"" \
+			"$bitstring" >> "$thisConf"

@@ -42,6 +42,7 @@ are the results of several scripts of which each just accomplishes a single task
 .br
 But since they all refer to the very same configuration files, it attempts to reduce required interaction and should ease the initial effort to get the first usable files.
 .br
+As a set it functions as project manager and will grow over time. Starting with just a few functions aiming for high quality.
 
 In the end,
 .B ds make PROJECTLABEL
@@ -69,11 +70,10 @@ Provides the default values for ssh.
 the password will be stored in plaintext.
 .IP ~/.config/dev-scripts/prjs/<PROJECTLABEL>
 .RS 4
-.IP ./PROJECTLABEL.conf
+.IP ./<PROJECTLABEL>.conf
 Provides the projects name, path and whether or not it is a FAS project.
-.br
-Also GIT will retrieve its
-.B git_name
+.IP ./git.conf
+Contains either the git name of the project, or the fixed/full url to the code
 from it.
 .IP ./rpm.conf
 Provides the projects specfile and default builddir.

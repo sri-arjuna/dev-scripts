@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.4
+	script_version=0.6
 #
 #	Title
 #
@@ -28,7 +28,7 @@
 	tui-title "$title ($script_version)"
 	[[ -f "$CONF_GIT" ]] || \
 		(tui-wait 5s "Please take care to provide all required data...";ds setup)
-	source "$CONF_GIT" || exit 1
+	source "$CONF_GIT" || ds setup
 #
 #	Variables
 #
@@ -41,9 +41,10 @@
 	else	LBL="$4"
 	fi
 	source "$DIR_CFG/$LBL/$LBL.conf"
-	source "$DIR_CFG/git.conf"
+	#source "$DIR_BASE/git.conf"
 	. /etc/tui/apps.conf
 	REQ_ADD=false
+	remote_only=false
 	README="$prj_name
 ======
 
@@ -71,22 +72,25 @@ Example Readme
 #	Display
 #
 	prj_git=""
-	tui-echo "What is the according GIT project name?"
-	prj_git=$(tui-read "Leave empty for: '$prj_name'")
-	[[ -z "$prj_git" ]] && prj_git="$prj_name"
-	printf "prj_git=$prj_git\n" >> "$DIR_CFG/$LBL/$LBL.conf"
+	if tui-yesno "Is this a regular $GIT_ID project?"
+	then	tui-echo "What is the according GIT project name?"
+		prj_git=$(tui-read "Leave empty for: '$prj_name'")
+		[[ -z "$prj_git" ]] && prj_git="$prj_name"
+		printf "prj_git=$prj_git\n" > "$DIR_CFG/$LBL/git.conf"
 	
-	case $GIT_ID in
-	GitHub)		URL="$GIT_URL/$GIT_USER/$prj_git.git"
-			URL2="$GIT_URL/new"	;;
-	SourcceForge)	URL="$GIT_URL/p/$prj_git/code"
-			URL2="$GIT_URL/p/add_project"	;;
-	esac	
+		case $GIT_ID in
+		GitHub)		URL="$GIT_URL/$GIT_USER/$prj_git.git"
+				URL2="$GIT_URL/new"	;;
+		SourcceForge)	URL="$GIT_URL/p/$prj_git/code"
+				URL2="$GIT_URL/p/add_project"	;;
+		esac	
+	else	URL=$(tui-read "What is the full URL to the git repositry?")
+	fi
 	
+	#tui-bol-dir "$prj_path"
 	cd "$prj_path"
 	if [[ "" = "$(which ls)" ]]
 	then	# Its all empty
-		echo THAT
 		tui-echo "Please select current situation:"
 		A="Empty project"
 		B="Project exists already"
@@ -106,9 +110,9 @@ Example Readme
 			[[ -f "$prj_name.spec" ]] && \
 				tui-edit "$prj_name.spec" && \
 				tui-press
-			git init .
-			git add .
-			git commit -m "Init repositry"
+			git init . > /dev/zero
+			git add . > /dev/zero
+			git commit -m "Init repositry" > /dev/zero
 			tui-status $? "Created GIT repositry for $prj_name"
 			break
 			;;
@@ -120,18 +124,17 @@ Example Readme
 			;;
 		"$C")	tui-echo "TODO handling remote only projects... vicious!!" "$TUI_TODO"
 			tui-echo "Nothing to do? maybe..."
+			remote_only=true
 			;;
 		esac
+		printf '%s\n' "remote_only=$remote_only" >> "$DIR_CFG/$LBL/$LBL.conf"
 		done
 	else	# There is already stuff in here
 		REQ_ADD=true
-		echo
-		echo THIS
-		echo
 		[[ -f "$prj_name.spec" ]] && tui-edit "$prj_name.spec" && tui-press
-		git init .
-		git add .
-		git commit -m "Init repositry"
+		git init . > /dev/zero
+		git add . > /dev/zero
+		git commit -m "Init repositry"  > /dev/zero
 		tui-status $? "Created GIT repositry for $prj_name"
 		RET=$?
 		
@@ -142,7 +145,7 @@ Example Readme
 	if $REQ_ADD || ! grep origin "$prj_path/.git/config"
 	then	#echo "$BROWSER -- $BROWSER_GUI -- $URL -- $URL2"
 		[[ ! -z "$URL2" ]] && $BROWSER_GUI "$URL2"
-		#[[ ! -z "$URL" ]] && \
+		[[ ! -z "$URL" ]] && \
 		cat >> "$prj_path/.git/config" << EOF
 [remote "origin"]
 	url = $URL

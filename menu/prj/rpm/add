@@ -38,18 +38,34 @@
 	else	LBL="$4"
 	fi
 	source "$DIR_CFG/$LBL/$LBL.conf"
+	oPWD="$(pwd)"
 #
 #	Display
 #
+	#tui-bol-dir "$prj_path"
 	cd "$prj_path"
 	rpmdev-newspec "$prj_name" > /dev/zero
 	tui-status $? "Created specfile ($prj_path/$prj_name.spec)"
 	RET=$?
 	
+	printf "# RPM configuration for $prj_name\n" > "$DIR_CFG/$LBL/rpm.conf"
 	printf "specfile=\"\$prj_path/\$prj_name.spec\"\n" >> "$DIR_CFG/$LBL/rpm.conf"
-	printf "rpm_builddir=\"\$HOME/rpmbuild\"\n" >> "$CONF_RPM"
+	
+	grep -q "rpm_buildir" "$CONF_RPM" || printf "rpm_builddir=\"\$HOME/rpmbuild\"\n" >> "$CONF_RPM"
+	
+	tui-echo "What is your default build target?"
+	select bOpt in all sources packages;do
+	case $bOpt in
+	all)		opt="ba"	;;
+	sources)	opt="bs"	;;
+	packages)	opt="bb"	;;
+	esac
+	break
+	done
+	printf "opts=$opt\n" >> "$DIR_CFG/$LBL/rpm.conf"
 	
 	tui-yesno "Edit the specfile now?" && \
 		tui-edit "$prj_path/$prj_name.spec"
 	
+	cd "$oPWD"
 	exit $RET

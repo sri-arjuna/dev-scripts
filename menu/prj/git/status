@@ -20,12 +20,16 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.3
+	script_version=0.1
 #
 #	Title
 #
-	title="$OA_TITLE - RPM Handler - Build package"
+	title="$OA_TITLE - GIT Handler - Status"
 	tui-title "$title ($script_version)"
+	[[ -f "$CONF_GIT" ]] || \
+		(tui-wait 5s "Please take care to provide all required data...";ds setup)
+	source "$CONF_GIT" || exit 1
+	TMP=$DIR_BASE/tmp.tmp
 #
 #	Variables
 #
@@ -38,53 +42,55 @@
 	else	LBL="$4"
 	fi
 	source "$DIR_CFG/$LBL/$LBL.conf"
-	source "$DIR_CFG/$LBL/rpm.conf"
-	source "$CONF_RPM"
-	OPTS="-$opt"
-	VER=$(grep Version "$specfile"|awk '{print $2}')
-	TARBALL="$prj_name-$VER.tar.gz"
-	DEST="$rpm_builddir"
-#
-#	Functions
-#
-	increase_release() { #
-	#
-	#
-		rel=$(grep -i "release:" "$specfile"|awk '{print $2}')
-		num=${rel/\%*/}
-		other=${rel/*\%/}
-		num=$((num+1))
-		sed s,"$rel","$num%$other",g -i "$specfile"
-		return $?
-	}
-	#increase_release ; exit
-	#set -x
-#
-#	Display
-#
-	rpmdev-setuptree
-	# Create tarball if missing
-	if [[ ! -f "$DEST/SOURCES/$TARBALL" ]]
-	then	cd "$prj_path/.."
-		tui-tar "$prj_name"
-		mv "$prj_name.tar.gz" "$DEST/SOURCES/$TARBALL"
-		cd "$prj_path"
-	fi
-	ln -sf "$specfile" "$DEST/SPECS/$(basename $specfile)"
+	source "$DIR_CFG/$LBL/git.conf"
 	
-	rpmbuild $OPTS "$specfile" && \
-		increase_release && \
-		tui-status $? "Updated releasenumber of $specfile"
+	cd "$prj_path"
+	oLC_ALL="$LC_ALL"
+	export LC_ALL=C
+	str="$(git status)"
+	list_add=""
+	list_del=""
+	list_mod=""
+		
+	# has changed
+	echo "$str" | \
+		grep -q mod && \
+		list_mod=$(echo "$str"|\
+			grep ^mod|\
+			awk '{print $2}')
 	
-	if $useFAS
-	then	source $HOME/.config/fas/fas.conf
-		DEST="$FAS_REVIEW/$prj_name"
-		TMP="$DIR_BASE/tmp.tmp"
-		ds prj rpm list $LBL "$TMP"
-		[[ -d "$DEST" ]] || mkdir -p "$DEST"
-		rpmdev-setuptree
-		cat "$TMP"|while read line;do
-			tui-echo "Moved to $DEST:" "$(basename $line)"
-			mv "$line" "$DEST"/
-		done
+	# Was removed
+	echo "$str" | \
+		grep -q del && \
+		list_del=$(echo "$str"|\
+			grep ^del|\
+			awk '{print $2}')
+	
+	# Is added
+	len=0
+	len=$(cat "$TMP"|wc -l)
+	len=$((len+1))
+	if echo "$str"|grep -A$len "git add <" |grep -v \"  > "$TMP"
+	then	echo "$str"|grep ^untra | awk '{print $3}' >> "$TMP"
+		list_add=$(cat "$TMP")
 	fi
+#
+#	Display & Action
+#
+	tmp="$list_add$list_del$list_mod"
+	tmp="$list_add $list_del $list_mod"
+	#tmp=""
+	if [[ "" = "$(echo $tmp)" ]]
+	then	tui-echo "Nothing to do" "commit maybe??"
+	else	tui-echo "Got some work to do:" "$(echo $tmp)"
+		##
+		## TODO
+		##	PSM für files/status
+		## TODO
+		##
+		
+	fi
+#
+#	Exit
+#
+	export LC_ALL="$oLC_ALL"

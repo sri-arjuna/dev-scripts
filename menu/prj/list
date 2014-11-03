@@ -20,25 +20,27 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.2
+	script_version=0.1
 #
 #	Title
 #
-	title="$OA_TITLE - GIT Handler - Edit Config"
+	title="$OA_TITLE - List project modules"
 	tui-title "$title ($script_version)"
-	[[ -f "$CONF_GIT" ]] || \
-		(tui-wait 5s "Please take care to provide all required data...";ds setup)
-	source "$CONF_GIT" || exit 1
 #
 #	Variables
 #
-	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
-	then	if [[ -d "$DIR_CFG/$1" ]]
-		then	LBL="$1"
-		else	tui-echo "Please select the label to work with:"
-			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
-		fi
-	else	LBL="$4"
-	fi
-	source "$DIR_CFG/$LBL/$LBL.conf"
-	tui-edit "$prj_path/.git/config" "$DIR_CFG/$LBL/git.conf" "$CONF_GIT"
+	LBL=""
+	cd "$DIR_CFG"
+	[[ -z "$LBL" ]] && list=($(ls|grep -v "\."))
+#
+#	Display
+#
+	for L in "${list[@]}";do
+		S=$(tui-value-get "$L/$L.conf" "prj_name")
+		uses=""
+		for T in rpm livecd git
+		do	[[ -f "$L/$T.conf" ]] && \
+				uses+=" $T"
+		done
+		tui-echo "$S ($L) uses:" "$uses"
+	done

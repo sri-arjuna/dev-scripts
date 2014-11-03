@@ -1,6 +1,6 @@
 Name:        dev-scripts
-Version:     0.0.5
-Release:     1%{?dist}
+Version:     0.1.0
+Release:     0%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
@@ -11,10 +11,16 @@ Source0:     http://sea.fedorapeople.org/review/%{name}/%{name}-%{version}.tar.g
 BuildArch:   noarch
 
 Requires:    tui
-#Requires:    fas
-#Requires:    fedora-packager
-
-
+Requires:    spin-kickstarts
+Requires:    livecd-tools
+Requires:    rpmlint
+Requires:    rpmdevtools
+Requires:    rpm-build
+Requires:    git
+Requires:    gcc
+Requires:    auto-buildrequires
+Requires:    createrepo
+	
 %description
 A collection of scripts that aims to make a developers life easier
 * ssh
@@ -42,7 +48,7 @@ mkdir -p     %{buildroot}%{_bindir} \
                      %{buildroot}%{_datarootdir}/%{name}
 # Move docs
 mv %{name}/man/*        %{buildroot}%{_mandir}/man1/
-rmdir %{name}/man
+rm -fr %{name}/.git
 mv %{name}/*                          %{buildroot}%{_datarootdir}/%{name}/
 cd %{buildroot}
 ln -sf %{_datarootdir}/%{name}/ds.sh  %{buildroot}%{_bindir}/ds 
@@ -59,6 +65,14 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Oct 27 2014 - Simon A. Erat - erat.simon@gmail.com - 0.1.0
+- Provided functions seem stable
+
+* Fri Oct 31 2014 - Simon A. Erat - erat.simon@gmail.com - 0.0.6
+- improved git, rpm
+- added kickstart/livecd module
+- fixed requires list
+
 * Tue Oct 28 2014 - Simon A. Erat - erat.simon@gmail.com - 0.0.5
 - Added manpage
 - Hotfix manpage

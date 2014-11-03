@@ -23,7 +23,7 @@
 #
 	[[ -z "$2" ]] && LBL="" || LBL="$2"
 	[[ -z $LBL ]] || str=" ($LBL)"
-	TASK_LIST=$(cd /usr/share/dev-scripts/menu/prj;ls -l|grep ^d|awk '{print $9}')
+	TASK_LIST=$(cd /usr/share/dev-scripts/menu/prj;ls -l|grep ^d|awk '{print $9}'|sed s,ks,livecd,g)	#|grep -v git
 	LIST=""
 #
 #	Display & Action
@@ -34,26 +34,32 @@
 		select LBL in $(cd "$DIR_CFG";ls);do break;done
 		tui-status $? "Selected: $LBL" || exit $?
 	fi
+	old="$(pwd)"
 	cur="$DIR_CFG/$LBL"
 	source "$cur/$LBL.conf"
 	cd "$cur"
-	for L in $TASK_LIST;do [[ -f "$L.conf" ]] && LIST+=" $L";done;
+	for L in $TASK_LIST;do 
+		#echo $L
+		[[ -f "$L.conf" ]] && LIST+=" $L"
+	done
+	#echo $LIST
+	
+	cd "$old"
 	
 	for T in $LIST;do
-	case $T in
-	rpm)	ds prj rpm make $LBL
-		;;
-	git)	tui-echo "TODO: $T"
-		;;
-	sf)	tui-echo "TODO: $T"
-		;;
-	build)	tui-echo "TODO: $T"
-		;;
-	ftp)	tui-echo "TODO: $T"
-		;;
-	repo)	tui-echo "TODO: $T"
-		;;
-#	RPM)	tui-echo "TODO: $T"
-#		;;	
-	esac
+		cmd="$(pwd)/prj"
+		add=""
+		tui-title "Task ($T) for '$LBL' with: $(echo $LIST)"
+		
+		case $T in
+		rpm)	add="/rpm/make"		;;
+		livecd)	add="/ks/make" 		;;	
+		git)	tui-echo "TODO: $T"	;;
+		*)	tui-echo "TODO: $T"	;;
+	#	ks)	tui-echo "TODO: $T"
+	#		;;	
+		esac
+		
+		#echo $cmd$add
+		[[ -z "$add" ]] || $cmd$add $LBL
 	done
