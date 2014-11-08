@@ -25,7 +25,7 @@
 #	License:	GNU General Public License (LGPL)
 #	Created:	2014.09.13
 #	Changed:	2014.09.13
-	script_version=0.0.1
+	script_version=0.2
 	TITLE="Dev-Scripts - Setup"
 #	Description:	Set up the project main settings
 #			
@@ -91,8 +91,8 @@ GIT_URL=https://github.com
 EOF
 	source $CONFIG
 	source $CONF_GIT
-	#source /usr/share/dev-scripts/incl/load_env
-	source /home/sea/prjs/dev-scripts/incl/load_env
+	source /usr/share/dev-scripts/incl/load_env
+	#source /home/sea/prjs/dev-scripts/incl/load_env
 #
 #	Catching Arguments
 #
@@ -130,7 +130,10 @@ EOF
 	
 	tui-echo "What is your GIT Username on $name?"
 	newVAL=$(tui-read "Leave empty for '$GIT_USER':")
-	[[ -z $newVAL ]] || tui-value-set $CONF_GIT GIT_USER $newVAL
+	[[ -z $newVAL ]] || tui-value-set "$CONF_GIT" GIT_USER "$newVAL"
+	# TODO
+	tui-echo "TODO: Save to $HOME/.gitconf if not exists yet!" \
+		"Better yet, read it out if exists.. (low prio)"
 	tui-echo
 	
 	#tui-echo "

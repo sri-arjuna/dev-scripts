@@ -106,7 +106,9 @@
 		fi
 	else	source "$template" > "$prj_name.ks" 
 	fi
-	printf '%s\n' "# Kickstart configuration for $prj_name" "kickstart=\"$prj_path/$prj_name.ks\"" > "$thisConf"
+	
+	printf '%s\n' 	"# Kickstart configuration for $prj_name" \
+			"kickstart=\"$prj_path/$prj_name.ks\"" > "$thisConf"
 	
 	ARCH=32
 	if [[ $(uname -m) = x86_64 ]]
@@ -116,28 +118,37 @@
 		bitstring="do32bit=$do32bit"
 		ARCH=64
 	fi
-	tui-status 111 "When making an iso, the script will automaticly append: ${ARCH}bit to the iso filename"
 	
 	rel=$(grep -i version_id /etc/os-release)
-	rel=${rel/*=}
-	echo $rel ; exit
-	prj_release=$(tui-read "What is the default release version: ($rel) ")
+	rel="${rel/*=}"
+	#echo $rel ; exit
+	
+	tui-echo
+	tui-status 111 "Leave empty for (default) value"
+	tui-status 111 "When making an iso, the script will automaticly append: ${ARCH}bit to the iso filename"
+	tui-status 111 "No  spaces allowed in FSLABEL"
+	
+	
+	prj_release=$(tui-read "What is the default release version? ($rel):")
 	[[ -z "$prj_release" ]] && prj_release=$rel
 	
-	tui-status 111 "No  spaces allowed in FSLABEL!"
-	prj_label=$(tui-read "What is the FSLABEL:($prj_name)" )
-	[[ -z "$prj_label" ]] && prj_label=${prj_name/ /_}
 	
-	prj_title=$(tui-read "What is the TITLE:($prj_name) ")
-	[[ -z "$prj_title" ]] && prj_title="$prj_name"
+	prj_label=$(tui-read "What is the FSLABEL? ($prj_name):" )
+	[[ -z "$prj_label" ]] && prj_label="${prj_name/ /_}"
 	
-	prj_outpath=$(tui-read "What is the output directory:($HOME) ")
-	[[ -z "$prj_outpath" ]] && prj_outpath=$HOME
+	prj_title=$(tui-read "What is the TITLE? ($prj_name):")
+	[[ -z "$prj_title" ]] && prj_title="${prj_name/_/ }"
 	
-	tui-yesno "Use a specific temp directory?" && \
-		prj_tempdir=$(tui-read "What is the temporary directory?")
+	prj_outpath=$(tui-read "What is the output directory? ($HOME):")
+	[[ -z "$prj_outpath" ]] && prj_outpath="$HOME"
+	
+	prj_tempdird="/tmp/${prj_name}_$ARCH"
+	prj_tempdir=""
+	
+	prj_tempdir=$(tui-read "What is the temp directory? ($prj_tempdird):")
+	[[ -z "$(echo $prj_tempdir)" ]] && prj_tempdir="$prj_tempdird"
+	
 	bitstring=""
-	
 	# "opts=$opt"
 	printf '%s\n'   "prj_release=\"$prj_release\"" \
 			"prj_label=\"$prj_label\"" \

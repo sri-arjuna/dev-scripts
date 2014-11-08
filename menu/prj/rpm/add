@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.2
+	script_version=0.3
 #
 #	Title
 #
@@ -62,7 +62,7 @@
 	esac
 	break
 	done
-	printf "opts=$opt\n" >> "$DIR_CFG/$LBL/rpm.conf"
+	printf "opt=$opt\n" >> "$DIR_CFG/$LBL/rpm.conf"
 	
 	tui-yesno "Edit the specfile now?" && \
 		tui-edit "$prj_path/$prj_name.spec"

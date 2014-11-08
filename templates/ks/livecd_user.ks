@@ -7,14 +7,8 @@ cat << EOF
 	lang $language
 	keyboard $keyboard
 	timezone $timezone
-
-	auth --useshadow --enablemd5
-	selinux --enforcing
-	firewall --enabled --service=mdns
-	firstboot --reconfig
-	xconfig --startxonboot
-
-	services --enabled=NetworkManager --disabled=network,sshd
+	# For all the rest, use the user configuration done at system install
+	%include	/root/anaconda-ks.cfg
 #
 #
 #	Includes, order required
@@ -28,11 +22,6 @@ cat << EOF
 #
 #
 #	Custom Area
-#
-	# Disable the anaconda configuration if you plan to share the image!
-	%include	/root/anaconda-ks.cfg
-#
-#	Post -- download section
 #
 %post --nochroot
 	# '/' is the root of your host machine

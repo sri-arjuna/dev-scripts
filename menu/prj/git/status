@@ -88,7 +88,12 @@
 		##	PSM für files/status
 		## TODO
 		##
-		
+		if tui-yesno "Do you want to 'semi-auto' do these now?"
+		then	# TODO handling for remove / add
+			tui-status 0 "Ok, lets get it started."
+			
+		else	tui-status 0 "OK, you do it manualy then..."
+		fi
 	fi
 #
 #	Exit

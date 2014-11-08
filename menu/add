@@ -27,7 +27,8 @@
 #	Variables
 #
 	[[ -d "$DIR_PRJS" ]] || ds setup
-	TITLE="$OA_TITLE - New Project 1"
+	TITLE="$OA_TITLE - New Project"
+	script_version=0.2
 	LIST_Y=""
 	[[ -d "$DIR_CFG" ]] || mkdir -p "$DIR_CFG"
 	case "$2" in
@@ -41,7 +42,7 @@
 #
 #	Action
 #
-	tui-title "$OA_TITLE - New Project"
+	tui-title "$OA_TITLE - New Project ($script_version)"
 	if [[ -z "$PRJ" ]]
 	then	tui-echo "Lets a create a new project, for this we need some information..."
 		if tui-yesno "Is it an existing project?"
