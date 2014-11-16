@@ -28,7 +28,7 @@
 #
 	[[ -d "$DIR_PRJS" ]] || ds setup
 	TITLE="$OA_TITLE - New Project"
-	script_version=0.2
+	script_version=0.3
 	LIST_Y=""
 	[[ -d "$DIR_CFG" ]] || mkdir -p "$DIR_CFG"
 	case "$2" in
@@ -73,16 +73,21 @@
 	
 	# Create the basic config file:
 	
-	printf "# Project configuration for \"$NAME\" ($LBL)
-prj_name=\"$NAME\"
-prj_path=\"$PRJ\"
-" > "$thisConf"
-	. "$thisConf"
+	echo "# Project configuration for \"$NAME\" ($LBL)" > "$thisConf"
+	tui-conf-set "$thisConf" prj_name "\"$NAME\""
+	tui-conf-set "$thisConf" prj_path "\"$PRJ\""
+
+	source "$thisConf"
 	[[ -d "$prj_path" ]] || mkdir -p "$prj_path"
 	
 	$hasFAS && \
 		tui-yesno "FAS was found, use for this project?" && \
-		printf "useFAS=true\n" >> "$thisConf"
+		tui-conf-set "$thisConf" useFAS "true" || \
+		tui-conf-set "$thisConf" useFAS "false"
+	
+	tui-yesno "Is this a remote only project?" && \
+		tui-conf-set "$thisConf" remoteOnly "true" || \
+		tui-conf-set "$thisConf" remoteOnly "false"
 	
 	MODULES=""
 	tui-title "$OA_TITLE - Modules"

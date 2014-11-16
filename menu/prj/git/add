@@ -40,11 +40,13 @@
 		fi
 	else	LBL="$4"
 	fi
+	[[ -f "$CONF_GIT" ]] && source "$CONF_GIT"
 	source "$DIR_CFG/$LBL/$LBL.conf"
-	#source "$DIR_BASE/git.conf"
+	tConf="$DIR_CFG/$LBL/git.conf"
+	
 	. /etc/tui/apps.conf
 	REQ_ADD=false
-	remote_only=false
+	remoteOnly=false
 	README="$prj_name
 ======
 
@@ -76,71 +78,61 @@ Example Readme
 	then	tui-echo "What is the according GIT project name?"
 		prj_git=$(tui-read "Leave empty for: '$prj_name'")
 		[[ -z "$prj_git" ]] && prj_git="$prj_name"
-		printf "prj_git=$prj_git\n" > "$DIR_CFG/$LBL/git.conf"
-	
+		tui-conf-set "$tConf" prj_git "$prj_git"
+		. "$tConf"
+		
 		case $GIT_ID in
-		GitHub)		URL="$GIT_URL/$GIT_USER/$prj_git.git"
-				URL2="$GIT_URL/new"	;;
-		SourcceForge)	URL="$GIT_URL/p/$prj_git/code"
-				URL2="$GIT_URL/p/add_project"	;;
-		esac	
+		GitHub)		URL="\$GIT_URL/\$GIT_USER/\$prj_git.git"	;;
+		SourcceForge)	URL="$GIT_URL/p/$prj_git/code"			;;
+		*)		tui-echo "Unkown host, leave empty for 'default':"
+				template="\$GIT_URL/\$GIT_USER/\$prj_git"
+				tui-echo "$template" "$(eval $template)"
+				use=$(tui-read "What is the full URL:")
+				[[ -z "$use" ]] && \
+					URL="$template" || \
+					URL="$use"
+		esac
 	else	URL=$(tui-read "What is the full URL to the git repositry?")
 	fi
+	tui-conf-set "$tConf" URL "\"$URL\""
+	[[ -z "$URL_NEW" ]] || tui-conf-set "$tConf" URL_NEW "\"$URL_NEW\""
 	
-	#tui-bol-dir "$prj_path"
+#
+#	Initialize or use local git repositry
+#	
 	cd "$prj_path"
-	if [[ "" = "$(which ls)" ]]
-	then	# Its all empty
-		tui-echo "Please select current situation:"
-		A="Empty project"
-		B="Project exists already"
-		C="Project is remote ONLY"
-		select situ in "$A" "$B" "$C";do
-		case "$situ" in
-		"$A")	REQ_ADD=true
-			tui-yesno "Do you want to create a template README.md?" && \
-				printf "$README" > "README.md" && \
-				tui-yesno "Edit README.md now?" && \
-				tui-edit README.md && \
-				tui-press
-			tui-yesno "Do you want to add a GPLv3 license file?" && \
-				wget -o "LICENSE" "http://www.gnu.org/licenses/gpl.txt"
-			tui-yesno "Do you want to add a (tui) script application?" && \
-				tui-new-script -p "./$prj_name.sh"
-			[[ -f "$prj_name.spec" ]] && \
-				tui-edit "$prj_name.spec" && \
-				tui-press
-			git init . > /dev/zero
-			git add . > /dev/zero
-			git commit -m "Init repositry" > /dev/zero
-			tui-status $? "Created GIT repositry for $prj_name"
-			break
-			;;
-		"$B")	tui-printf "Downloading repositry..."
-			git clone "$URL" "$prj_name" > /dev/zero
-			tui-status $? "Created GIT repositry for $prj_name"
-			RET=$?
-			cd "$prj_name"
-			;;
-		"$C")	tui-echo "TODO handling remote only projects... vicious!!" "$TUI_TODO"
-			tui-echo "Nothing to do? maybe..."
-			remote_only=true
-			;;
-		esac
-		printf '%s\n' "remote_only=$remote_only" >> "$DIR_CFG/$LBL/$LBL.conf"
-		done
-	else	# There is already stuff in here
-		REQ_ADD=true
-		[[ -f "$prj_name.spec" ]] && tui-edit "$prj_name.spec" && tui-press
-		git init . > /dev/zero
-		git add . > /dev/zero
-		git commit -m "Init repositry"  > /dev/zero
-		tui-status $? "Created GIT repositry for $prj_name"
-		RET=$?
-		
+	if $remoteOnly
+	then	msg="Its remote only, nothing to do..."
+		RET=4
+	else	if [[ -d .git ]]
+		then	msg="There is already a git repositry."
+			RET=4
+		else	tui-echo "Preparing first git action"
+			if [[ "" = "$(which ls)" ]]
+			then	tui-echo "The project dir \"$prj_path\" is empty."
+				if tui-yesno "Does the project exist on $GIT_ID already?"
+				then	cd ..
+					git clone "$URL" "$prj_path" > /dev/zero
+					RET=$?
+					msg="Downloaded repositry from \"$URL\""
+					cd "$prj_path"
+				else	# Same as 'non-empty' else....
+					git init . > /dev/zero
+					RET=$?
+					git add . > /dev/zero
+					git commit -m "Init repositry" > /dev/zero
+					msg="Created GIT repositry for $prj_name"
+				fi
+			else	# Same as 'project-not-remote' else
+				git init . > /dev/zero
+				RET=$?
+				git add . > /dev/zero
+				git commit -m "Init repositry" > /dev/zero
+				msg="Created GIT repositry for $prj_name"
+			fi
+		fi
 	fi
-	
-	tui-status $RET "$REQ_ADD"
+	tui-status $RET "$msg"
 	
 	if $REQ_ADD || ! grep origin "$prj_path/.git/config"
 	then	#echo "$BROWSER -- $BROWSER_GUI -- $URL -- $URL2"

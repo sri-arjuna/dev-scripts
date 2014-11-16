@@ -1,6 +1,6 @@
 Name:        dev-scripts
-Version:     0.1.0
-Release:     4%{?dist}
+Version:     0.2.0
+Release:     11%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
@@ -48,6 +48,7 @@ mkdir -p     %{buildroot}%{_bindir} \
                      %{buildroot}%{_datarootdir}/%{name}
 # Move docs
 mv %{name}/man/*        %{buildroot}%{_mandir}/man1/
+rm -fr %{name}/man
 rm -fr %{name}/.git
 mv %{name}/*            %{buildroot}%{_datarootdir}/%{name}/
 cd %{buildroot}
@@ -58,7 +59,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)   
-%doc %{_mandir}/man1/dev-scripts.1.gz
+%doc %{_mandir}/man1/%{name}.1.gz
 %doc %{_mandir}/man1/ds*.1.gz
 %{_datarootdir}/%{name}/
 %{_bindir}/ds

@@ -1,17 +1,5 @@
 #!/bin/bash
-#echo LOAD_ENV
 oPWD="$(pwd)"
-#for D in "$DIR_BASE" "$DIR_CFG";do
-#	if [[ -d "$D" ]]
-#	then	cd "$D"
-#		for f in *conf;do
-#			[[ -f $f ]] && . $f && printf "."
-#		done
-#		cd "$oPWD"
-#	fi
-#done
-
-# Other vars
 export OA_TITLE="Dev-Scripts"
 export OA_VER=$script_version
 export ssh_file=$HOME/.ssh/id_rsa

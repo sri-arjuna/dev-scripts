@@ -20,30 +20,36 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.1
+	script_version=0.2
 #
 #	Title
 #
+	[[ -z "$4" ]] && LBL="" || LBL="$4"
 	title="$OA_TITLE - GIT Handler - Status"
 	tui-title "$title ($script_version)"
 	[[ -f "$CONF_GIT" ]] || \
 		(tui-wait 5s "Please take care to provide all required data...";ds setup)
-	source "$CONF_GIT" || exit 1
+	#source "$CONF_GIT" || exit 1
 	TMP=$DIR_BASE/tmp.tmp
 #
 #	Variables
 #
-	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
-	then	if [[ -d "$DIR_CFG/$1" ]]
-		then	LBL="$1"
-		else	tui-echo "Please select the label to work with:"
-			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
-		fi
-	else	LBL="$4"
+	if [[ -z "$LBL" ]]
+	then	tui-echo "Please select a project to make:"
+		select LBL in $(cd "$DIR_CFG";ls);do break;done
+		tui-status $? "Selected: $LBL" || exit $?
 	fi
+	[[ -f "$CONF_GIT" ]] && source "$CONF_GIT"
 	source "$DIR_CFG/$LBL/$LBL.conf"
-	source "$DIR_CFG/$LBL/git.conf"
-	
+	if $remoteOnly
+	then	tui-status 1 "Project \"$prj_name\" is remote only!"
+		exit 1
+	fi
+	if [[ -f "$DIR_CFG/$LBL/git.conf" ]] 
+	then	source "$DIR_CFG/$LBL/git.conf"
+	else	tui-status 1 "This project has no git config!"
+		exit 1
+	fi
 	cd "$prj_path"
 	oLC_ALL="$LC_ALL"
 	export LC_ALL=C

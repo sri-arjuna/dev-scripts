@@ -36,7 +36,7 @@
 #	Display
 #
 	for L in "${list[@]}";do
-		S=$(tui-value-get "$L/$L.conf" "prj_name")
+		S=$(tui-conf-get "$L/$L.conf" "prj_name")
 		uses=""
 		for T in rpm livecd git
 		do	[[ -f "$L/$T.conf" ]] && \

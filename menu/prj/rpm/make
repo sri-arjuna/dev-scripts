@@ -20,7 +20,10 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.3
+	#source /etc/tui/tui.conf
+	source /etc/tui/tui.conf
+	
+	script_version=0.4
 #
 #	Title
 #
@@ -29,6 +32,22 @@
 #
 #	Variables
 #
+	#isVerbose=false
+	NONVERBOSE="--quiet"
+	while getopts "v" opts
+	do 	echo "$opts
+	
+		asdf
+		adsf"
+		case $opts in
+		v)	#isVerbose=true
+			NONVERBOSE=""
+			shift $(($OPTIND - 1))
+			;;
+		esac
+	done
+	shift $(($OPTIND - 1))
+	
 	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
 	then	if [[ -d "$DIR_CFG/$1" ]]
 		then	LBL="$1"
@@ -37,18 +56,19 @@
 		fi
 	else	LBL="$4"
 	fi
+	source "$CONF_RPM"
 	source "$DIR_CFG/$LBL/$LBL.conf"
 	source "$DIR_CFG/$LBL/rpm.conf"
-	source "$CONF_RPM"
 	OPTS="-$opt"
 	VER=$(grep Version "$specfile"|awk '{print $2}')
 	TARBALL="$prj_name-$VER.tar.gz"
 	DEST="$rpm_builddir"
+	[[ -z "$rpm_cleandir" ]] && rpm_cleandir=true
 #
 #	Functions
 #
 	increase_release() { #
-	#
+	# Automaticly updates the release (build) number
 	#
 		rel=$(grep -i "release:" "$specfile"|awk '{print $2}')
 		num=${rel/\%*/}
@@ -57,34 +77,101 @@
 		sed s,"$rel","$num%$other",g -i "$specfile"
 		return $?
 	}
-	#increase_release ; exit
-	#set -x
 #
 #	Display
 #
-	rpmdev-setuptree
-	# Create tarball if missing
-	if [[ ! -f "$DEST/SOURCES/$TARBALL" ]]
-	then	cd "$prj_path/.."
+	if $rpm_cleandir
+	then	rpmdev-wipetree 2>&1 1>/dev/zero
+		tui-status $? "Cleaned $rpm_builddir"
+	fi
+	[[ -d "$rpm_builddir" ]] || rpmdev-setuptree
+	ln -sf "$specfile" "$DEST/SPECS/${specfile##*/}"
+	
+	
+	if $remoteOnly
+	then	# Create temporary home dir...
+		cd $prj_path
+		if [[ ! "" = "$(ls *patch)" ]]
+		then	# Copy patches to sources dir
+			cp *patch $rpm_builddir/SOURCES/
+		fi
+		prj_path+="/$prj_name"
+		[[ -d "$prj_path" ]] && \
+			tui-yesno "Do you want a fresh download?" && \
+			rm -fr "$prj_path" && \
+			new=true || \
+			new=false
+		mkdir -p "$prj_path"
+		cd "$prj_path"
+		
+		if $new
+		then	case "${downloadMode:0:3}" in
+			git)	URL=""
+				source "$CONF_GIT"
+				source "$DIR_CFG/$LBL/git.conf"
+				#VER=$(grep -i "version:" "$specfile"|awk '{print $2}')
+				#[[ -z "$URL" ]] && \
+				#	URL="$GIT_URL/$GIT_USER/$prj_git" && \
+				#	[[ G = ${GIT_ID:0:1} ]] && URL+=".git"
+				tui-title "$URL"
+				git clone "$URL" .
+				;;
+			sou)	tarballl="$(basename $downloadMode)"
+			
+				wget -O "$tarball" $(grep "$downloadMode" "$specfile"|awk '{print $2}')
+				if echo "$tarball"|grep -q ".tar"
+				then	tar -axf "$tarball"
+				elif [[ "zip" = "${tarball:0:(-3)}" ]]
+				then	unzip -uo "$tarball"
+				else	tui-status 1 "Sorry cant handle $tarball yet!"
+					exit 1
+				fi
+				[[ -f "$tarball" ]] && rm -fr "$tarball"
+			esac
+		fi
+	fi	
+#	else	# Create tarball
+		cd "$prj_path/.."
 		tui-tar "$prj_name"
 		mv "$prj_name.tar.gz" "$DEST/SOURCES/$TARBALL"
 		cd "$prj_path"
-	fi
-	ln -sf "$specfile" "$DEST/SPECS/$(basename $specfile)"
+		
+#	fi
 	
-	rpmbuild $OPTS "$specfile" && \
+	# New way
+	touch "$TUI_TEMP_FILE"
+	[[ -z $TUI_LOG ]] && source tui || echo $TUI_LOG
+	
+	#echo "rpmbuild $OPTS $NONVERBOSE \"$specfile\" 2&>$TUI_LOG" >$TUI_LOG "$TUI_TEMP_FILE"
+	echo "rpmbuild $OPTS $NONVERBOSE \"$specfile\" 1>>$TUI_LOG 2>> $TUI_LOG" > "$TUI_TEMP_FILE"
+	tui-bgjob "$TUI_TEMP_FILE" "Building $prj_name package..." "Built $prj_name package." && \
 		increase_release && \
 		tui-status $? "Updated releasenumber of $specfile"
+	# Old way
+	#rpmbuild $OPTS "$specfile" && \
+	#	increase_release && \
+	#	tui-status $? "Updated releasenumber of $specfile"
 	
 	if $useFAS
 	then	source $HOME/.config/fas/fas.conf
 		DEST="$FAS_REVIEW/$prj_name"
-		TMP="$DIR_BASE/tmp.tmp"
-		ds prj rpm list $LBL "$TMP"
+		TMP="$TUI_TEMP_DIR/$prj_name.info"
+		/usr/share/dev-scripts/menu/prj/rpm/list $LBL "$TMP"
+		#ds prj rpm list $LBL "$TMP"
 		[[ -d "$DEST" ]] || mkdir -p "$DEST"
-		rpmdev-setuptree
+		#rpmdev-setuptree
 		cat "$TMP"|while read line;do
-			tui-echo "Moved to $DEST:" "$(basename $line)"
-			mv "$line" "$DEST"/
+			[[ -f "$line" ]] && cp "$line" "$DEST"/
+			tui-status $? "Copied to $DEST:" "$(basename $line)"
 		done
+		cp "$rpm_builddir/SOURCES/$TARBALL" "$DEST"
+		tui-status $? "Copied to $DEST:" "$(basename $TARBALL)"
+		cp "$specfile" "$DEST"
+		tui-status $? "Copied to $DEST:" "$(basename $specfile)"
+		rm -fr "$TMP"
+	fi
+	
+	if $rpm_cleandir_after
+	then 	rpmdev-wipetree 2>&1 1>/dev/zero
+		tui-status $? "Cleaned $rpm_builddir"
 	fi

@@ -20,11 +20,11 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.3
+	script_version=0.4
 #
 #	Title
 #
-	title="$OA_TITLE - RPM Handler - Add specfile"
+	title="$OA_TITLE - RPM Handler - Configure RPM and add specfile"
 	tui-title "$title ($script_version)"
 #
 #	Variables
@@ -37,21 +37,25 @@
 		fi
 	else	LBL="$4"
 	fi
-	source "$DIR_CFG/$LBL/$LBL.conf"
+	
 	oPWD="$(pwd)"
+	rpm_builddir=""
+	[[ -f "$CONF_RPM" ]] && source "$CONF_RPM"
+	source "$DIR_CFG/$LBL/$LBL.conf" ; cd "$prj_path"
+	tConf="$DIR_CFG/$LBL/rpm.conf"
 #
 #	Display
 #
-	#tui-bol-dir "$prj_path"
-	cd "$prj_path"
+	# Create the file if not existent
+	[[ -f "$tConf" ]] || \
+		echo "# RPM configuration for $prj_name" > "$tConf"
+	
+	# TODO, use custom templates, according to remoteOnly?
 	rpmdev-newspec "$prj_name" > /dev/zero
-	tui-status $? "Created specfile ($prj_path/$prj_name.spec)"
+	tui-status $? "Created specfile ($prj_path/$prj_name.spec)" && \
+		tui-conf-set "$tConf" specfile "\"\$prj_path/\$prj_name.spec\"" && \
+		source "$tConf"
 	RET=$?
-	
-	printf "# RPM configuration for $prj_name\n" > "$DIR_CFG/$LBL/rpm.conf"
-	printf "specfile=\"\$prj_path/\$prj_name.spec\"\n" >> "$DIR_CFG/$LBL/rpm.conf"
-	
-	grep -q "rpm_buildir" "$CONF_RPM" || printf "rpm_builddir=\"\$HOME/rpmbuild\"\n" >> "$CONF_RPM"
 	
 	tui-echo "What is your default build target?"
 	select bOpt in all sources packages;do
@@ -62,10 +66,45 @@
 	esac
 	break
 	done
-	printf "opt=$opt\n" >> "$DIR_CFG/$LBL/rpm.conf"
+	tui-conf-set "$tConf" opt "$opt"
 	
-	tui-yesno "Edit the specfile now?" && \
-		tui-edit "$prj_path/$prj_name.spec"
+	
+	if $remoteOnly
+	then	LIST=$(grep -i "source" "$specfile"|awk '{print $1}')
+		if [[ -f "$DIR_CFG/$LBL/git.conf" ]]
+		then	tui-echo "Please select what shall be used to retrieve code:"
+			select SOURCE in git $LIST ;do break;done
+		elif [[ "$(echo $LIST)" = "$(echo $LIST|awk '{print $1}')" ]]
+		then	SOURCE="$(echo $LIST)"
+		else	tui-echo "Please select which source shall be used:"
+			grep -i ^source "$specfile"|while read src val;do tui-echo "${src/:/}" "$val";done
+			select SOURCE in $LIST;do break;done
+		fi
+		tui-conf-set "$tConf" downloadMode "${SOURCE/:/}"
+	fi
+	
+	tui-yesno "Clean builddir after each new build?" && \
+		tui-conf-set "$tConf" rpm_cleandir_after "true" || \
+		tui-conf-set "$tConf" rpm_cleandir_after "false"
+	
+	if [[ ! -f "$CONF_RPM" ]]
+	then	touch "$CONF_RPM"
+		echo "# Shared RPM configuration among all projects" > "$CONF_RPM"
+		tui-yesno "Do you have defined a custom builddir?" && \
+			tDir=$(tui-read "Please type the full path:") && \
+			tui-conf-set "$CONF_RPM" rpm_builddir "\"$tDir\"" || \
+			tui-conf-set "$CONF_RPM" rpm_builddir "\"\$HOME/rpmbuild\""
+	
+		tui-yesno "Clean builddir before each new build?" && \
+			tui-conf-set "$CONF_RPM" rpm_cleandir "true" || \
+			tui-conf-set "$CONF_RPM" rpm_cleandir "false"
+		
+	fi
+	
+	[[ ! -z "$specfile" ]] && \
+		tui-yesno "Edit the specfile now?" && \
+		tui-edit "$specfile"
 	
 	cd "$oPWD"
+	tui-status $RET "Created specfile and rpm config for: $prj_name"
 	exit $RET
