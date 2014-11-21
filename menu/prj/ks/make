@@ -103,8 +103,9 @@
 	
 	# Generate the tempdir string
 	[[ -z "$prj_tempdir" ]] && \
-		cmd_tmpdir="--tmpdir=\"/mnt/tmp/\${prj_label}\"" || \
-		cmd_tmpdir="--tmpdir=\"$prj_tempdir\""
+		prj_tempdir="/mnt/tmp/${prj_label}"
+	cmd_tmpdir="--tmpdir=\"$prj_tempdir\""
+	
 	[[ ! -z "$do32bit" ]] && \
 		$do32bit && \
 		PRE="setarch linux32" || \
@@ -136,8 +137,7 @@
 	if [[ $RET -eq 0 ]]
 	then	mv *iso "$prj_outpath"
 		# Clean up temporary data, specialy if it failed....
-		cd "$prj_tempdir"
-		rm -fr *
+		[[ ! -z "$prj_tempdir" ]] && cd "$prj_tempdir" && rm -fr *
 	else	tui-yesno "Do you want to see the \"$LOG\" for details?" && \
 			tui-edit "$LOG"
 	fi
