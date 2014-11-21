@@ -20,7 +20,6 @@
 # ------------------------------------------------------------------------
 #
 #	
-	#source /etc/tui/tui.conf
 	source /etc/tui/tui.conf
 	
 	script_version=0.4
@@ -32,17 +31,16 @@
 #
 #	Variables
 #
-	#isVerbose=false
+	case $# in
+	5)	shift 3 ;;
+	esac
+	
+	beVerbose=false
 	NONVERBOSE="--quiet"
 	while getopts "v" opts
-	do 	echo "$opts
-	
-		asdf
-		adsf"
-		case $opts in
-		v)	#isVerbose=true
+	do 	case $opts in
+		v)	beVerbose=true
 			NONVERBOSE=""
-			shift $(($OPTIND - 1))
 			;;
 		esac
 	done
@@ -56,12 +54,25 @@
 		fi
 	else	LBL="$4"
 	fi
+	[[ -z $TUI_LOG ]] && source tui || echo $TUI_LOG
 	source "$CONF_RPM"
 	source "$DIR_CFG/$LBL/$LBL.conf"
 	source "$DIR_CFG/$LBL/rpm.conf"
+	touch "$TUI_TEMP_FILE"
 	OPTS="-$opt"
+	if [[ -z "" ]]
+	then	specfile="$prj_path/$prj_name.spec"
+		[[ -f "$specfile" ]] || specfile=$(tui-read "Please type the full path to the specfile:")
+		
+		# Save for later use
+		if [[ -f "$specfile" ]]
+		then	tui-conf-set "$DIR_CFG/$LBL/rpm.conf" specfile "$specfile"
+		else	tui-status 1 "Cant work without a specfile!"
+			exit $?
+		fi
+	fi
 	VER=$(grep Version "$specfile"|awk '{print $2}')
-	TARBALL="$prj_name-$VER.tar.gz"
+	TARBALL="$prj_name-$VER.$TAR_EXT"
 	DEST="$rpm_builddir"
 	[[ -z "$rpm_cleandir" ]] && rpm_cleandir=true
 #
@@ -130,36 +141,44 @@
 			esac
 		fi
 	fi	
-#	else	# Create tarball
-		cd "$prj_path/.."
-		tui-tar "$prj_name"
-		mv "$prj_name.tar.gz" "$DEST/SOURCES/$TARBALL"
-		cd "$prj_path"
+
+	# Make the tarball
+	cd "$prj_path/.."
+	tui-tar "$prj_name"
+	cp "$prj_name.tar.gz" "$DEST/SOURCES/$TARBALL"
+
+	# Copy the patch files to the sources..
+	$remoteOnly || cd "$prj_path"
+	LIST=$(ls *patch 2>/dev/zero)
+	[[ ! -z "$LIST" ]] && \
+		for L in $LIST;do [[ -f "$L" ]] && tui-printf "Copy $L..." "$TUI_WORK";cp $LIST "$DEST/SOURCES";tui-status $? "Copied $L";done
+	LIST=$(grep -i "source"[0-9]":" *spec|grep -v ^'#'|grep -i -v ^http|grep -v \{|awk '{print $2}')
+	[[ ! -z "$LIST" ]] && \
+		for L in $LIST;do [[ -f "$L" ]] && tui-printf "Copy $L..." "$TUI_WORK";cp $LIST "$DEST/SOURCES";tui-status $? "Copied $L";done
+	
+	# Execute the command
+	cmd=
+	cd "$prj_path"
+	if $beVerbose
+	then	rpmbuild $OPTS "$specfile"
+		RET=$?
+	else	echo "rpmbuild $OPTS $NONVERBOSE \"$specfile\" 1>>$TUI_LOG 2>>$TUI_LOG" > "$TUI_TEMP_FILE"
+		tui-bgjob "$TUI_TEMP_FILE" "Building $prj_name package..." "Built $prj_name package."
+		RET=$?
+	fi
+	
+	# Increase build number if built was successfull
+	[[ 0 -eq $RET ]] && \
+		( increase_release ; tui-status $? "Updated releasenumber of $specfile") || \
+		( tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG")
 		
-#	fi
-	
-	# New way
-	touch "$TUI_TEMP_FILE"
-	[[ -z $TUI_LOG ]] && source tui || echo $TUI_LOG
-	
-	#echo "rpmbuild $OPTS $NONVERBOSE \"$specfile\" 2&>$TUI_LOG" >$TUI_LOG "$TUI_TEMP_FILE"
-	echo "rpmbuild $OPTS $NONVERBOSE \"$specfile\" 1>>$TUI_LOG 2>> $TUI_LOG" > "$TUI_TEMP_FILE"
-	tui-bgjob "$TUI_TEMP_FILE" "Building $prj_name package..." "Built $prj_name package." && \
-		increase_release && \
-		tui-status $? "Updated releasenumber of $specfile"
-	# Old way
-	#rpmbuild $OPTS "$specfile" && \
-	#	increase_release && \
-	#	tui-status $? "Updated releasenumber of $specfile"
-	
-	if $useFAS
+	# Optional task
+	if $useFAS && [[ 0 -eq $RET ]]
 	then	source $HOME/.config/fas/fas.conf
 		DEST="$FAS_REVIEW/$prj_name"
 		TMP="$TUI_TEMP_DIR/$prj_name.info"
 		/usr/share/dev-scripts/menu/prj/rpm/list $LBL "$TMP"
-		#ds prj rpm list $LBL "$TMP"
 		[[ -d "$DEST" ]] || mkdir -p "$DEST"
-		#rpmdev-setuptree
 		cat "$TMP"|while read line;do
 			[[ -f "$line" ]] && cp "$line" "$DEST"/
 			tui-status $? "Copied to $DEST:" "$(basename $line)"

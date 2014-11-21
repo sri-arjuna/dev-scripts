@@ -24,7 +24,7 @@
 #
 #	Title
 #
-	title="$OA_TITLE - GIT Handler - Add repositry"
+	title="$OA_TITLE - GIT Handler - Upload repositry"
 	tui-title "$title ($script_version)"
 	[[ -f "$CONF_GIT" ]] || \
 		(tui-wait 5s "Please take care to provide all required data...";ds setup)

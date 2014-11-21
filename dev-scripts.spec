@@ -1,11 +1,11 @@
 Name:        dev-scripts
 Version:     0.2.0
-Release:     11%{?dist}
+Release:     23%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
 URL:         https://github.com/sri-arjuna/dev-scripts
-#Source0:     https://github.com/sri-arjuna/dev-scripts/archive/master.zip
+##Source0:     https://github.com/sri-arjuna/dev-scripts/archive/master.zip
 Source0:     http://sea.fedorapeople.org/review/%{name}/%{name}-%{version}.tar.gz
 
 BuildArch:   noarch
@@ -44,12 +44,17 @@ rm -rf       %{buildroot}
 #	%{name}/build-rpm-%{name}.sh \
 	#%{name}/%{name}.spec
 mkdir -p     %{buildroot}%{_bindir} \
-                     %{buildroot}%{_mandir}/man1 \
-                     %{buildroot}%{_datarootdir}/%{name}
+             %{buildroot}%{_mandir}/man1 \
+             %{buildroot}%{_datarootdir}/%{name} \
+	     %{buildroot}%{_sysconfdir}/bash_completion.d/
 # Move docs
 mv %{name}/man/*        %{buildroot}%{_mandir}/man1/
 rm -fr %{name}/man
 rm -fr %{name}/.git
+
+mv %{name}/%{name}_c.bash %{buildroot}%{_sysconfdir}/bash_completion.d/
+
+# Last step
 mv %{name}/*            %{buildroot}%{_datarootdir}/%{name}/
 cd %{buildroot}
 ln -sf %{_datarootdir}/%{name}/ds.sh  %{buildroot}%{_bindir}/ds 
@@ -61,11 +66,16 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)   
 %doc %{_mandir}/man1/%{name}.1.gz
 %doc %{_mandir}/man1/ds*.1.gz
+%{_sysconfdir}/bash_completion.d/%{name}*
 %{_datarootdir}/%{name}/
 %{_bindir}/ds
 
 
+
 %changelog
+* Sun Nov 16 2014 - Simon A. Erat - erat.simon@gmail.com - 0.2.1
+- Added bash completition
+
 * Mon Nov 03 2014 - Simon A. Erat - erat.simon@gmail.com - 0.1.0
 - Provided functions seem stable
 

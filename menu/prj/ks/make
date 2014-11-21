@@ -20,15 +20,38 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.3
+	script_version=0.4
 #
 #	Title
 #
 	title="$OA_TITLE - Kickstart - Make an iso image"
 	tui-title "$title ($script_version)"
+	source /etc/tui/status.conf
+	source /etc/tui/tui.conf
 #
 #	Variables
 #
+	LOG=$LOG_LIVECD
+	NONVERBOSE="--quiet"
+	beVerbose=false
+	ov=false
+	
+	case $# in
+	5)	shift 2 ;;
+	esac
+	
+	NONVERBOSE="--quiet --logfile=$LOG"
+	while getopts "v36h" opts
+	do 	case $opts in
+		3)	do32bit=true	; ov=true ;;
+		6)	do32bit=false	; ov=true ;;
+		v)	beVerbose=true
+			NONVERBOSE=""
+			;;
+		esac
+	done
+	shift $(($OPTIND - 1))
+	
 	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
 	then	if [[ -d "$DIR_CFG/$1" ]]
 		then	LBL="$1"
@@ -40,47 +63,83 @@
 	source "$DIR_CFG/$LBL/$LBL.conf"
 	source "$DIR_BASE/livecd.conf"
 	source "$DIR_CFG/$LBL/livecd.conf"
-	for arg in "${@}";do
-	case "$arg" in
-	"-3")	do32bit=true	;;
-	"-6")	do32bit=false	;;
-	esac
-	done
-	if [[ -z "$do32bit" ]]
-	then	# Not set, use system arch
-		uname -m | grep -q 64  && \
+
+	# Create STRING according to ARCH
+	[[ -z "$arch_styl" ]] && \
+		arch_style=kernel && \
+		tui-conf-set "$DIR_CFG/$LBL/livecd.conf" arch_style $arch_style
+	
+	if $ov
+	then	# User wants specific ARCH
+		$do32bit_ov && \
 			ARCH=32 || \
 			ARCH=64
-	else	$do32bit && \
-			ARCH=32 || \
-			ARCH=64
+		do32bit=$do32bit_ov
+	else	# Dynamicly reckognize which ARCH
+		# Depeing on preset
+		if $do32bit
+		then	ARCH=32
+		else	uname -m | grep -q "_64"  && \
+				ARCH=64 || \
+				ARCH=32
+		fi
 	fi
+	tui-echo "Building as $ARCH bit iso." "$TUI_INFO"
+	
+	case $arch_style in
+	number)		ARCH=${ARCH}bit	;;
+	kernel)		str="$(uname -r)"
+			if [[ x86_64 -eq $(uname -m) ]] && $do32bit
+			then	str=${str/$(uname -m)/i686}
+			fi
+			# Remove fc$RELEASEVER
+			ARCH="${str/.fc[1-9][0-9]/}"
+			;;
+	esac
+	
+	# Append the string to the label and title
+	prj_label+="_${ARCH}"
+	prj_title+=" (${ARCH})"
+	
+	# Generate the tempdir string
 	[[ -z "$prj_tempdir" ]] && \
-		cmd_tmpdir="--tmpdir=\"/mnt/tmp/${prj_label}_${ARCH}\"" || \
+		cmd_tmpdir="--tmpdir=\"/mnt/tmp/\${prj_label}\"" || \
 		cmd_tmpdir="--tmpdir=\"$prj_tempdir\""
 	[[ ! -z "$do32bit" ]] && \
 		$do32bit && \
 		PRE="setarch linux32" || \
 		PRE=""
-	
-	prj_label+="_${ARCH}bit"
-	prj_title+=" ${ARCH}bit"
 #
 #	Display
 #
-	# livecd-creator -c "$kickstart" -t "$prj_title" -f "$prj_label" --releasever=$prj_release $cmd_tmpdir
 	cmd_post="chown $USER:$USER ${prj_label}.iso"
+	$beVerbose && \
+		verboseString="" || \
+		verboseString="1>>$LOG 2>>\"$LOG\""
+		#verboseString="1>>$LOG 2>>\"$LOG\" > \"$TUI_TEMP_FILE\""
 	sudo grep -q $USER /etc/sudoers && \
-		cmd="sudo $PRE livecd-creator -c \"$kickstart\" -t \"$prj_title\" -f \"$prj_label\" --releasever=$prj_release $cmd_tmpdir ; sudo $cmd_post" || \
-		cmd="su -c \"$PRE livecd-creator -c \\\"$kickstart\\\" -t \\\"$prj_title\\\" -f \\\"$prj_label\\\" --releasever=$prj_release $cmd_tmpdir ; $cmd_post\""
+		cmd="sudo $PRE livecd-creator $NONVERBOSE -c \"$kickstart\" -t \"$prj_title\" -f \"$prj_label\" --releasever=$prj_release $cmd_tmpdir $verboseString && sudo $cmd_post" || \
+		cmd="su -c \"$PRE livecd-creator $NONVERBOSE -c \\\"$kickstart\\\" -t \\\"$prj_title\\\" -f \\\"$prj_label\\\" --releasever=$prj_release $cmd_tmpdir $verboseString && $cmd_post\""
+	[[ -f "$kickstart" ]] ;	tui-status $? "$kickstart exists" || exit 1
 	
-	[[ -f "$kickstart" ]] && tui-status $? "$kickstart exists"
+	cd "$prj_path"
+	if $beVerbose
+	then	cmd="${cmd/$verboseString/}"
+		tui-echo "Executing:" "$cmd"
+		eval $cmd
+		RET=$?
+	else	echo "$cmd" > "$TUI_TEMP_FILE.cmd"
+		tui-bgjob "$TUI_TEMP_FILE.cmd" "Building $prj_name ($prj_label.iso) live image...   (~30-60m)" "Built $prj_name ($prj_outpath/$prj_label.iso) live image."
+		RET=$?
+	fi
 	
-	cd "$prj_outpath"
-	tui-echo "Executing:" "$cmd"
-	eval $cmd
+	if [[ $RET -eq 0 ]]
+	then	mv *iso "$prj_outpath"
+		# Clean up temporary data, specialy if it failed....
+		cd "$prj_tempdir"
+		rm -fr *
+	else	tui-yesno "Do you want to see the \"$LOG\" for details?" && \
+			tui-edit "$LOG"
+	fi
 	cd "$OLDPWD"
-	
-	#exit
-	#tui-status $? "Built $prj_name" && \
-	#	mv "$prj_label.iso" "$prj_outpath/"
+	exit $RET

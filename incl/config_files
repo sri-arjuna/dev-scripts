@@ -1,23 +1,31 @@
 #!/bin/bash
 #
-#	Done
+#	Config files (defaults for projects)
 #
 	CONF_SSH=$DIR_BASE/ssh.conf
-#
-#	TODO
-#
 	CONF_GIT=$DIR_BASE/git.conf
 	CONF_RPM=$DIR_BASE/rpm.conf
 	CONF_KOJI=$DIR_BASE/koji.conf
+	CONF_LIVECD=$DIR_BASE/livecd.conf
+	CONF_MOCK=$DIR_BASE/mock.conf
+#
+#	Log files
+#
+	LOG_SSH=$DIR_BASE/logs/ssh.log
+	LOG_GIT=$DIR_BASE/logs/git.log
+	LOG_RPM=$DIR_BASE/logs/rpm.log
+	LOG_KOJI=$DIR_BASE/logs/koji.log
+	LOG_LIVECD=$DIR_BASE/logs/livecd.log
+	LOG_MOCK=$DIR_BASE/logs/mock.log
 #
 #	This is a 'sanity' check for folders
 #
 	[[ -d $HOME/.config/dev-scripts ]] || \
-		( tui-bol-dir $HOME/.config/dev-scripts/{prjs,gitinfo} ; ds setup )
+		( tui-bol-dir $HOME/.config/dev-scripts/{prjs,gitinfo,log} ; ds setup )
 #
 #	Load those conf files, if exists
 #
-	for F in $CONF_GIT $CONF_RPM $CONF_KOJI $CONF_SSH
+	for F in $CONF_GIT $CONF_RPM $CONF_KOJI $CONF_SSH $CONF_LIVECD $CONF_MOCK
 	do
 		[[ -f "$F" ]] && source "$F" && printf "."
 	done

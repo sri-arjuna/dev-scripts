@@ -21,7 +21,21 @@
 #
 #	Variables
 #
-	[[ -z "$2" ]] && LBL="" || LBL="$2"
+	# BUGFIX, need tui-browser fix this first
+	shift 1
+	. /etc/tui/status.conf
+	LBL=""
+	VERBOSE=""
+	ARGS=""
+	while getopts "v36h" opts
+	do 	case $opts in
+		#v)	VERBOSE="-v"	;;
+		*)	ARGS+=" -$opts"	;;
+		esac
+	done
+	#[[ -z "$ARGS" ]] || ARGS="-$ARGS"
+	shift $(($OPTIND - 1))
+	[[ -z "$1" ]] && LBL="" || LBL="$1"
 	[[ -z $LBL ]] || str=" ($LBL)"
 	TASK_LIST=$(cd /usr/share/dev-scripts/menu/prj;ls -l|grep ^d|awk '{print $9}'|sed s,ks,livecd,g)	#|grep -v git
 	LIST=""
@@ -49,17 +63,18 @@
 	for T in $LIST;do
 		cmd="$(pwd)/prj"
 		add=""
-		tui-title "Task ($T) for '$LBL' with: $(echo $LIST)"
+		#tui-title "Task ($T) for '$LBL' with: $(echo $LIST)"
 		
 		case $T in
 		rpm)	add="/rpm/make"		;;
 		livecd)	add="/ks/make" 		;;	
-		git)	tui-echo "TODO: $T"	;;
-		*)	tui-echo "TODO: $T"	;;
+	#	git)	tui-echo "TODO: $T"	;;
+		*)	tui-status $RET_TODO "TODO: $T"	;;
 	#	ks)	tui-echo "TODO: $T"
 	#		;;	
 		esac
 		
-		#echo $cmd$add
-		[[ -z "$add" ]] || $cmd$add $LBL
+		#echo $cmd$add $ARGS
+		[[ -z "$add" ]] || $cmd$add $VERBOSE $ARGS $LBL
+		#[[ -z "$add" ]] || $cmd$add $LBL $VERBOSE
 	done

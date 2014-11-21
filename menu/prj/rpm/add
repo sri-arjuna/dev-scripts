@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.4
+	script_version=0.5
 #
 #	Title
 #
@@ -51,21 +51,26 @@
 		echo "# RPM configuration for $prj_name" > "$tConf"
 	
 	# TODO, use custom templates, according to remoteOnly?
+	specfile="$prj_path/$prj_name.spec"
 	rpmdev-newspec "$prj_name" > /dev/zero
-	tui-status $? "Created specfile ($prj_path/$prj_name.spec)" && \
-		tui-conf-set "$tConf" specfile "\"\$prj_path/\$prj_name.spec\"" && \
-		source "$tConf"
-	RET=$?
+	[[ $? -gt 1 ]] && RET=1 || RET=$?
+	tui-status $RET "Created specfile ($specfile)"
+	tui-conf-set "$tConf" specfile "\"\$prj_path/\$prj_name.spec\""
+	source "$tConf"
 	
 	tui-echo "What is your default build target?"
-	select bOpt in all sources packages;do
-	case $bOpt in
-	all)		opt="ba"	;;
-	sources)	opt="bs"	;;
-	packages)	opt="bb"	;;
-	esac
-	break
-	done
+	if $remoteOnly
+	then	tui-yesno "Will \"$prj_name\" be a 'noarch' project?" && \
+			opt=ba || opt=bs
+	else	select bOpt in all sources packages;do
+		case $bOpt in
+		all)		opt="ba"	;;
+		sources)	opt="bs"	;;
+		packages)	opt="bb"	;;
+		esac
+		break
+		done
+	fi
 	tui-conf-set "$tConf" opt "$opt"
 	
 	
