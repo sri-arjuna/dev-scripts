@@ -125,4 +125,5 @@ _dev-scripts_module()
 			;;
 	esac
 }
+# Actualy make it available to the shell
 complete -F _dev-scripts_module ds
