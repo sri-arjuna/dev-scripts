@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+#	sea Script-Tools dev build LABEL [|  PATH BUILDARGS ]
+#	
+#	Desription:	Builds the project label
+#			Submit buildargs just once
+#	Lisence:        GPL v3
+#	Author:         Simon A. Erat (sea)
+#	Release Date:   2012.06.22
+#	Changed Date:	2012.10.12
+	script_version=0.2
+#
+#	Title
+#
+	tui-title " Build Handler ($script_version)"
+#
+#	Variables
+#
+	lbl=""
+	argl="$3 $4"
+#
+#	Menu
+#
+	if [ ! " " = "$argl" ]
+	then	for arg in $argl;do
+			test -d $SEA_DEV_DIR/$arg && lbl=$arg
+			case $arg in
+			b|build)	menu=Build	;;
+			c|create)	menu=Create	;;
+			e|edit)		menu=Edit	;;
+			esac
+		done
+		case $menu in
+		Back)	break	;;
+		Create)	build_new $lbl ;;
+		Edit)	tui-edit $SEA_DEV_DIR/$lbl/build	;;
+		Build)	build_label $lbl	;;
+		esac
+	else	tui-printf "Please select a Project:" "$PROGRESS"
+		lbl=$(sea_select $(ls $SEA_DEV_DIR)) 
+		if [ -f $SEA_DEV_DIR/$lbl/build ]
+		then	moption=Edit
+		else	moption=Create
+		fi
+		menu=""
+		tui-echo "Selected Project: $lbl" "$SUCCESS"
+		select menu in Back "$moption build-settings" Build;do 
+			menu=$(echo "$menu"|awk '{print $1}')
+			case "$menu" in
+			Back)	break	;;
+			Create)	build_new $lbl ;;
+			Edit)	tui-edit $SEA_DEV_DIR/$lbl/build	;;
+			Build)	build_label $lbl	;;
+			esac
+		done
+	fi

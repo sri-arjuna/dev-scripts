@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+#	Desription:	Handles GIT Commands - Delete
+#	Lisence:        GPL v3
+#	Author:         Simon A. Erat (sea) ; < < erat . simon @ gmail . com >
+#	Created:	2013.08.25
+#	Changed:	2013.08.28
+	script_version=0.3
+#
+#	Title
+#
+	title="sea's GIT Handler - Delete"
+	sT "$title ($script_version)"
+#
+#	Variables
+#
+	lbl=""
+	removeBranch=""
+	args=( $(echo "$4" "$5" "$6" "$7" "$8" ))
+	for arg in "${args[@]}" ;do
+		[ ! "$SEA_DEV_DIR/" = "$SEA_DEV_DIR/$arg" ] && \
+			[ -d "$SEA_DEV_DIR/$arg" ] && \
+			lbl="$arg"
+		[ "-h" = "$arg" ] && \
+			echo -e "add ($script_version)
+				\rUsage: st dev git del [LABEL] [BRANCH]
+				\rRemoves a BRANCH from project LABEL.
+				\r" && return 99
+		[ ! "" = "$lbl" ] && \
+			[ ! "$arg" = "$lbl" ] && \
+			[ ! "" = "$(GIT_Branch_List $lbl|grep $arg)" ] && \
+			removeBranch="$arg"
+	done
+#
+#	Display
+#
+	[ -z $lbl ] && \
+		sE "Please select a project where GIT should be added:" && \
+		select lbl in $(PRJ_Select);do break;done
+	source "$SEA_DEV_DIR/$lbl/conf"
+	sE "Selected project:" "$prj_name"
+	
+	[ "" = "$removeBranch" ] && \
+		sE "Select the branch you want to remove:" && \
+		select removeBranch in $(GIT_Branch_List $lbl);do break;done
+	sE "Selected branch to remove:" "$removeBranch"	
+	GIT_Remove  "$lbl" "$removeBranch" #> /dev/zero
+	#ReportStatus $? "Removed branch $removeBranch from $prj_name"

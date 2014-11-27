@@ -1,0 +1,399 @@
+#!/bin/bash
+#
+#	sea's dev release is aimed to assist developers to  
+#	easy handle their multiple projects.
+#
+#	This script is written with best intention to help, 
+#	but there is NO warranty, garanty and I deny ANY responsiblity
+#	that may or may not affect your system.
+#
+#	Lisence:	GPL v3
+#	Author:		Simon A. Erat (sea)
+#	Release Date:	2012.07.29
+#	Changed Date:	2013.09.04
+	script_version="1.2"
+#
+#
+#	Title
+#
+	sT "sea's Release Script ($script_version)"
+#
+#	Variables
+#
+	lbl=""
+	workorder="" #"build rpm review koji ks ftp repo sf"
+	workorder_sort="build rpm review koji ks ftp repo git"
+	
+	if [ "" = "$XDG_DOWNLOAD_DIR" ]
+	then	test -f ~/.config/user-dirs.dirs && \
+			source ~/.config/user-dirs.dirs || \
+			XDG_DOWNLOAD_DIR=$HOME/Downloads
+	fi
+#
+#	Arguments
+#
+	if [ "" = "$3" ]
+	then	# No argument passed
+		sP "Selecting a project:" "$PROGRESS"
+		lbl=$(PRJ_Select)
+		[ "" = "$lbl" ] && sE "No project selected" "$FAIL" && return 1
+		sE "Selected project: $lbl" "$SUCCESS"
+	else	if test -d $SEA_DEV_DIR/$3
+		then	lbl=$3
+		else	sE "Supplied argument: $3, is not an existing project."
+			lbl=$3
+			ask "Create it now?" && \
+				PRJ_New $lbl || \
+				return 1
+		fi
+	fi
+#
+#	Subs
+#	
+#
+	releaseBuild() { #
+	#
+	#
+		lbl=$1
+		sT "Compiling binary for $prj_name"
+		sE "This is still BETA BETA" "BETA BETA "
+		sE "Start compiling $prj_name" "$PROGRESS"
+		build_label $lbl && retval=0 || retval=1
+		case $retval in
+		0)	sE "Compiled successfully $lbl" 	"$SUCCESS"	;;
+		1)	sE "There was an error compiling $lbl"	"$FAILURE"	;;
+		esac
+		sT "TODO ??"
+		sE "Handler for: " "outputfiles??"
+		return $retval
+	}
+	releaseGIT() { #
+	#
+	#
+		echo
+	}
+	releaseSF() { #
+	#
+	#
+		sT "Uploading to SourceForge"
+		
+		sP "Uploading files" "$WORK"
+		SF_Upload_Files $1 #"$list" /home/frs/project/$prj_name
+		ReportStatus $? "Uploaded files"
+		
+		sP "Uploading code to SourceForge" "$WORK"
+		SF_Upload $1
+		ReportStatus $? "Uploaded code"
+	}
+	releaseRPM() { #
+	#
+	#
+		sT "Building RPM of $prj_name"
+		#rpmdev-wipetree
+		#rpmdev-setuptree
+		RPM_Build $1
+	}
+	releaseKS() { #
+	#
+	#
+		KS_Prj_Spin $1
+	}
+	releaseReview() { #
+	#
+	#
+		lbl=$1
+		sT "BETA: Review Project"
+		if ask "Review your own Project $lbl?" 
+		then	for this in $(ls $outputdir|grep rpm) ;do 
+				ln -sf $outputdir/$this $XDG_DOWNLOAD_DIR/$this
+			done
+			st dev review $lbl 
+		fi
+	}
+	releaseKoji() { #
+	#
+	#
+		sT "Koji - Builds external packages"
+		RPM_Build_Koji $1 
+	}
+	releaseFTP() { #
+	# Trying to release your package LABEL as repositry
+	#
+		[ -z $1 ] && echo "Usage: releaseRepo LABEL" && return 1
+		lbl=$1
+		source $SEA_DEV_DIR/$lbl/ftp
+		
+		sT "FTP"
+
+		isSaved=$(cat $HOME/.netrc|grep $ftp_user)
+		if [ "" = "$isSaved" ] # nope its not. add it to netrc
+		then	echo "machine $ftp_adress login $ftp_user password $ftp_password" >> $HOME/.netrc
+			chmod 600 $HOME/.netrc
+		fi
+	#
+	#	calc file sizes
+	#
+		cd $ftp_path_local
+		
+		totalmb=0
+		for num in $(ls -l|awk '{print $5}')
+		do totalmb=$[ $totalmb + $num ]
+		done
+		totalmb=$[ $totalmb / 1024 ]
+	#
+	#	Uploading files
+	#	
+		sE "Project:"		"$prj_name"
+		sE "Path Local:"	"$ftp_path_local"
+		sE "Path Remote:"	"$ftp_path_remote"
+		filelist=$(find $ftp_path_local/)
+		sE "Files:"
+		for f in $filelist;do sE " * $f";done
+		sleep 1
+		sE "Uploading files" "Total size: ${totalmb:0: ${#totalmb} - 3 }'${totalmb:${#totalmb} - 3} kb"
+		sE "Attention, depending on size, this may take a long time..."
+		scriptfile="$SEA_DEV_DIR/$lbl/scripts/ftp"
+		if [ -f $scriptfile ]
+		then	if ask "Run FTP script instead of default FTP_Upload?"
+			then	source $scriptfile
+			else	FTP_Upload $lbl
+			fi
+		else	FTP_Upload $lbl
+		fi
+	}
+	releaseRepo() { # LABEL
+	# Trying to release your package as repositry
+	#
+		lbl=$1
+		[ -z $1 ] && echo "Usage: releaseRepo LABEL" && return 1
+		source $SEA_DEV_DIR/$lbl/conf
+		source $SEA_DEV_DIR/$lbl/rpm
+		source $SEA_DEV_DIR/$lbl/repo || return 1
+		
+		sT "Handle $(Capitalize $prj_name) repo"
+		
+		isSaved=$(cat $HOME/.netrc|grep $repo_user)
+		if [ "" = "$isSaved" ] # nope its not. add it to netrc
+		then	echo "machine $repo_adress login $repo_user password $repo_password" >> $HOME/.netrc
+			chmod 600 $HOME/.netrc
+		fi
+		
+		cd "$outputdir" || return 1
+		CheckPath "$repo_path_local/sources"
+		cp *rpm "$repo_path_local"
+				
+		REPO_Upload $lbl
+		ReportStatus $? "Uploaded files"
+		return $?
+		
+		if ask "Verify repositry?"
+		then	sP "Cleaning yum (1/3)" "$WORK"
+			sudo yum clean all > /dev/zero
+			sP "Rebuilding cache (2/3)" "$WORK"
+			sudo yum makecache > /dev/zero
+			sP "Requesting info (3/3)" "$WORK"
+			yum info $prj_name
+		fi
+	}
+	releasePrepare() { # LABEL
+	# Prepares an RPM build by asking to edit or change
+	# changelog, spec or rpm project configuration
+	#	Variables
+	#
+		lbl=$1
+		source $SEA_DEV_DIR/$lbl/conf
+	#
+	#	Prepare configuration files for project
+	#
+		sT "Prepare release for $(Capitalize $prj_name)"
+		cd $SEA_DEV_DIR/$lbl
+		for file in $(ls)
+		do	if [ -f $file ]
+			then	[ ! $file = release ] && \
+				[ ! $file = path ] && \
+				source $SEA_DEV_DIR/$lbl/$file
+				
+				case $file in
+				rpm)	ask "Change configuration: $file?" && \
+						sEdit $file
+					ask "Edit specfile?" && \
+						sEdit $rpm_spec_file
+					ask "Add a new changelog entry?" && \
+						AddChangelog $rpm_changelog
+					;;
+				*)	ask "Change configuration: $file?" && \
+						sEdit $file
+					;;
+				esac
+			fi
+		done
+		
+		sT " Cleaing temp files of $(Capitalize $prj_name)"
+		rmtf  $prj_path
+	}
+#
+#	Verify default or custom release
+#
+	if [ -f $SEA_DEV_DIR/$lbl/release ]
+	then	how=$(cat $SEA_DEV_DIR/$lbl/release)
+		case $how in
+		custom) 	sE "Selected custom script:" "$SEA_DEV_DIR/$lbl/custom"
+				source $SEA_DEV_DIR/$lbl/custom
+				return $? 	;;
+		default)	echo > /dev/zero ;;
+		*)		ReportStatus 1 "Invalid information, either \"default\" or \"custom\""
+				exit 1
+		esac
+	else	# create release order ?
+		# select if to add dev.prj.* or a script
+		remove_dir="$SEA_INCLUDE_DIR/module.dev.prj."
+		types_raw=$(ls $remove_dir*)
+		for typ in $types_raw;do
+			type="${typ:${#remove_dir}}"
+			types="$(echo $type|grep -v '\.') $types"
+		done
+		
+		sT "Set up automated release"
+		sE "This is the first time to release $lbl"
+		sE "The default release order looks like: $workorder_sort" "(always only if config file is available)"
+		sE ""
+		
+		script_list="beforrpm afterrpm beforekoji afterkoji"
+		CheckPath $SEA_DEV_DIR/$lbl/scripts
+		scripts=$(ls $SEA_DEV_DIR/$lbl/scripts)
+		select menu in Default CustomOrder;do
+			sE "Selected: " "$menu"
+			case $menu in
+			Default)	if [ "" = "$scripts" ]
+					then	for script in $script_list
+						do	ask "Add $script to scripts?" && \
+							sEdit $SEA_DEV_DIR/$lbl/scripts/$script
+						done
+					fi
+					retval="default"
+					;;
+			CustomOrder)	sE "You can either use bash commands in general," "or use the script-tools funtions"
+					sE "These may be either the prompt commands or the functinos" "to be read in $stDir/Documentation/CommandList"
+					press
+					sEdit $SEA_DEV_DIR/$lbl/scripts/custom
+					retval="custom"
+					;; 
+			esac
+			echo "$retval" > $SEA_DEV_DIR/$lbl/release
+			break
+		done
+	fi
+	source $SEA_DEV_DIR/$lbl/conf
+	sE "Loaded project: $(Capitalize $prj_name)" "$SUCCESS"
+#
+#	Preparation
+#
+	cd $SEA_DEV_DIR/$lbl ; rmtf > /dev/zero
+	ar_task=""
+	ar_status=""
+	count=0
+	
+	sT "Preparation:"
+	ask "Do you want to change any project configuration?" && \
+		releasePrepare $lbl
+	for sort in $workorder_sort;do [ -f "$SEA_DEV_DIR/$lbl/$sort" ] && ask "Add $sort to joblist?" && workorder+=" $sort";done
+	
+	
+	for file in $(ls)
+	do	if [ -f $file ]
+		then	[ ! $file = release ] && \
+				[ ! $file = path ] && \
+				source "$SEA_DEV_DIR/$lbl/$file"
+		fi
+	done
+	
+	for step in $workorder;do
+		ar_task[$count]=$step
+		ar_status[$count]="3"
+		sP "Loading tasks ($step)..." "$WORK"
+		((count++))
+	done
+	max=$count
+	count=0
+#
+#	Release the project
+#
+	for task in $workorder
+	do	file=${ar_task[$count]}
+		str_script=$SEA_DEV_DIR/$lbl/scripts/$file
+		ar_status[$count]="2"
+		
+		#clear
+		sT "Releasing $(Capitalize $prj_name) : $file"
+		mini=0
+		while [ ! $mini -eq $max ]
+		do	step=${ar_task[$mini]}
+			status="${ar_status[$mini]}"
+			ReportStatus "$status" "Task: $step"
+			((mini++))
+		done
+		#sleep 1
+		
+		case $file in
+		build)	cmd=releaseBuild	
+			;;
+		sf)	cmd=releaseSF	
+			;;
+		rpm)	cmd=releaseRPM	
+			;;
+		review)	cmd=releaseReview	
+			;;
+		koji)	cmd=releaseKoji	
+			;;
+		ftp)	cmd=releaseFTP	
+			;;
+		repo)	cmd=releaseRepo	
+			;;
+		ks)	cmd=releaseKS
+			;;
+		esac
+		
+		sT "Calling $cmd"
+		str_tmp=before	# Run pre-script
+		if [ -f $str_script.$str_tmp ] 
+		then	sP "Running '$str_tmp' $file script" "$WORK"
+			source $str_script.$str_tmp > /dev/stderr
+			ReportStatus $? "Ran $str_script.$str_tmp"
+			sE
+		fi
+		
+		# Actual execution
+		$cmd $lbl
+		ar_status[$count]="$?"
+		ReportStatus ${ar_status[$count]} "Task: ${ar_task[$count]}"
+		
+		str_tmp=after	# Copied from before section
+		if [ -f $str_script.$str_tmp ] 
+		then	sP "Running '$str_tmp' $file script" "$WORK"
+			source $str_script.$str_tmp > /dev/stderr
+			ReportStatus $? "Ran $str_script.$str_tmp"
+		fi
+		((count++))
+	done
+	
+	sT "Final report:"
+	mini=0
+	while [ ! $mini -eq $max ]
+	do	step=${ar_task[$mini]}
+		status="${ar_status[$mini]}"
+		ReportStatus "$status" "Task: $step"
+		((mini++))
+	done
+#
+#	All done
+#
+	if ask "Change version number?"
+	then	newVer=$(input "Please type the new version: ")
+		[ "" = "$(echo $newVer)" ] && ReportStatus 1 "Must provide a number." && return 1
+		for tFile in $prj_change_ver
+		do	sP "Changing version in: $tFile" "$WORK"
+			sed s,$version,$newVer,g -i "$tFile"
+		done
+		ReportStatus $? "Changed version number in files"
+	fi
+	#sE "Your project $prj_name is now released!"

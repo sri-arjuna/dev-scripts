@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+#	Desription:	Upload code to sourceforge
+#	Lisence:        GPL v3
+#	Author:         Simon A. Erat (sea), erat.simon æ gmail.com
+#	Release Date:   2012.11.16
+#	Changed Date:	2013.08.28
+	script_version=0.5
+#
+#	Title
+#
+	title="sea's SourceForge Handler - Upload Code"
+	sT "$title ($script_version)"
+#
+#	Variables
+#
+	lbl=""
+#
+#	Display
+#
+	[ ! -z $4 ] && \
+		[ -f "$SEA_DEV_DIR/$4/conf" ] && \
+		lbl="$4"
+	[ "" = "$lbl" ] && \
+		sP "Please select a LABEL to use:" && \
+		lbl=$(PRJ_Select) && \
+		sE "Selected $lbl" "$DONE"
+	SF_Upload "$lbl"
+	ReportStatus $? "Uploaded code of $prj_name to sourceforge"

@@ -27,8 +27,29 @@
 #
 	TITLE="Developer Scripts"
 	DIR=/usr/share/dev-scripts
-	[[ sea = $USER ]] && \
-		DIR=$HOME/prjs/dev-scripts	# TODO disable this
+	project_version="0.1"
+#
+#	Catch help
+#
+	case "$1" in
+	"-h")	echo "$TITLE ($project_version)
+Usage:	ds [section ..] [task] [options] [project]
+
+Examples:
+	ds prj rpm edit DEMO
+	ds prj edit OTHERPRJ
+	ds make -3 KICKSTARTPRJ
+	ds prj ks make -3 KICKSTARTPRJ
+	ds make -v PACKAGEPRJ
+
+At any time you can simply start 'ds' and browse through the commands/tasks provided.
+For more details, see either one of:
+	* man ds
+	* man dev-scripts
+"
+		exit $?
+		;;
+	esac
 #
 #	Action
 #

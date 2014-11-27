@@ -1,0 +1,114 @@
+#!/bin/bash
+#
+#	Desription:	Handles GIT Commands - Merge
+#	Lisence:        GPL v3
+#	Author:         Simon A. Erat (sea) ; < < erat . simon @ gmail . com >
+#	Created:	2013.08.24
+#	Changed:	2013.08.28
+	script_version=0.3
+#
+#	Title
+#
+	title="sea's GIT Handler - Merge"
+	sT "$title ($script_version)"
+#
+#	Variables
+#
+	lbl=""
+	mode=ask
+	mergebranch=""
+	changeBranch=""
+	args=( "$4" "$5" "$6" "$7" "$8" "$9" "$10" )
+	D=1
+	for arg in "${args[@]}" ;do
+		[ ! "$SEA_DEV_DIR/" = "$SEA_DEV_DIR/$arg" ] && \
+			[ -d "$SEA_DEV_DIR/$arg" ] && \
+			lbl="$arg"
+		[ ! "" = "$lbl" ] && \
+			[ ! "$arg" = "$lbl" ] && \
+			[ ! "" = "$(GIT_Branch_List $lbl|grep $arg 2>&1 )" ] && \
+			[ "" = "$(echo $mergeBranch)" ] && mergeBranch="$arg"
+		case "$arg" in
+		"-h"|"-help")
+			echo -e "merge ($script_version)
+				\rUsage: st dev prj git merge [LABEL BRANCH [options]]
+				\rMerges active branch with suplied BRANCH, ask if its not MASTER.
+				\rWhere options are:
+				\r\t-h|-help\t\tThis screen
+				\r\t-c|-checkout BRANCH\tChanges (checkout) to BRANCH before merge
+				\r\t-q|-auto\t\tSilent mode, automaticly changes to MASTER if required
+				\r" && return 99
+			;;
+		"-q"|"-auto")
+		 	mode="auto"
+			;;
+		"-c"|"-checkout")
+		 	mode="change"
+		 	[ "" = "$(echo $changeBranch)" ] && changeBranch="${args[$D]}"
+		 	;;
+		esac
+		[ ! "" = "$lbl" ] && \
+			[ ! "$arg" = "$lbl" ] && \
+			[ "" = "$(echo $mergeBranch)" ] && \
+			[ ! "$arg" = "$changeBranch" ] && \
+			[ ! "" = "$(GIT_Branch_List $lbl|grep $arg)" ] && \
+			mergeBranch="$arg"
+		let D++
+	done
+
+	[ "" = "$lbl" ] && \
+		sE "Please select a project to merge:" && \
+		select lbl in $(PRJ_Select);do break;done
+
+	if [ ! -f "$SEA_DEV_DIR/$lbl/git" ]
+	then	ask "Add a GIT module to $prj_name?" && \
+			GIT_New "$lbl"
+		return 1
+	fi
+	current=$(GIT_Branch_List "$lbl"|awk '{print $1}')
+	source "$SEA_DEV_DIR/$lbl/conf"
+	cd "$prj_path"
+#
+#	Display
+#	
+	sE "Selected project:" "$prj_name"
+	sE "Current branch:" "$current"
+	sE "Provided branch:" "$mergeBranch"
+	
+	case $mode in
+	ask)	[ ! "$current" = "master" ] && \
+			sE "Current branch is not master." "$INFO" && \
+			ask "Change to branch master first?" && \
+			GIT_Change "$lbl" "master" && \
+			current=$(GIT_Branch_List "$lbl"|awk '{print $1}')
+		if [ "" = "$(echo $mergeBranch)" ] || [ "$lbl" = "$mergeBranch" ]
+		then	sE "Select a branch to merge with $current:"
+			select mergeBranch in $(GIT_Branch_List "$lbl");do break;done
+		fi
+		GIT_Req_Commit "$lbl" && GIT_Commit "$lbl"
+		GIT_Merge "$lbl" "$mergeBranch"
+		#ReportStatus $? "Merged $prj_name:$current with $mergeBranch branch."
+		;;
+	auto)	[ ! "$current" = "master" ]  && \
+			[ "" = "$mergeBranch" ] && \
+			mergeBranch="$current"
+		
+		if [ "$mergeBranch" = "" ]
+		then	st dev prj git merge -h
+			exit 99
+		fi
+		
+		GIT_Req_Commit "$lbl" && GIT_Commit "$lbl" -m
+		[ ! "$current" = "master" ]  && \
+			GIT_Change "$lbl" "master"
+		GIT_Merge "$lbl" "$mergeBranch"
+		#ReportStatus $? "Merged $prj_name:master with $mergeBranch"
+		;;
+	change)	GIT_Req_Commit "$lbl" && GIT_Commit "$lbl"
+		GIT_Change "$lbl" "$changeBranch" && \
+			current=$(GIT_Branch_List "$lbl"|awk '{print $1}')
+		GIT_Merge "$lbl" "$mergeBranch"
+		#ReportStatus $? "Merged $prj_name:$current with $mergeBranch"
+		;;
+	esac
+	cd "$OLDPWD"

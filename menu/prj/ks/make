@@ -35,6 +35,7 @@
 	NONVERBOSE="--quiet"
 	beVerbose=false
 	ov=false
+	oPWD=$(pwd)
 	
 	case $# in
 	5)	shift 2 ;;
@@ -133,13 +134,15 @@
 		tui-bgjob "$TUI_TEMP_FILE.cmd" "Building $prj_name ($prj_label.iso) live image...   (~30-60m)" "Built $prj_name ($prj_outpath/$prj_label.iso) live image."
 		RET=$?
 	fi
+		
+	# Clean up temporary data, specialy if it failed....
+	[[ ! -z "$prj_tempdir" ]] && cd "$prj_tempdir" && rm -fr * && cd "$prj_path"
 	
-	if [[ $RET -eq 0 ]]
+	if [[ 0 -eq $RET ]]
 	then	mv *iso "$prj_outpath"
-		# Clean up temporary data, specialy if it failed....
-		[[ ! -z "$prj_tempdir" ]] && cd "$prj_tempdir" && rm -fr *
-	else	tui-yesno "Do you want to see the \"$LOG\" for details?" && \
-			tui-edit "$LOG"
+	elif [[ false = $beVerbose ]]
+	then	tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG"
 	fi
-	cd "$OLDPWD"
+	
+	cd "$oPWD"
 	exit $RET

@@ -22,11 +22,12 @@
 #	Variables
 #
 	# BUGFIX, need tui-browser fix this first
-	shift 1
+	#shift 1
 	. /etc/tui/status.conf
 	LBL=""
 	VERBOSE=""
 	ARGS=""
+	script_version=0.4
 	while getopts "v36h" opts
 	do 	case $opts in
 		#v)	VERBOSE="-v"	;;
@@ -42,7 +43,7 @@
 #
 #	Display & Action
 #
-	tui-title "Make all project tasks$str"
+	tui-title "Make all project tasks$str ($script_version)"
 	if [[ -z "$LBL" ]]
 	then	tui-echo "Please select a project to make:"
 		select LBL in $(cd "$DIR_CFG";ls);do break;done

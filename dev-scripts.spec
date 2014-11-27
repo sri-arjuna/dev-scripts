@@ -1,6 +1,6 @@
 Name:        dev-scripts
-Version:     0.2.0
-Release:     25%{?dist}
+Version:     0.2.1
+Release:     0%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
@@ -52,7 +52,7 @@ mv %{name}/man/*        %{buildroot}%{_mandir}/man1/
 rm -fr %{name}/man
 rm -fr %{name}/.git
 
-mv %{name}/%{name}_c.bash %{buildroot}%{_sysconfdir}/bash_completion.d/
+mv %{name}/%{name}_compl.bash %{buildroot}%{_sysconfdir}/bash_completion.d/
 
 # Last step
 mv %{name}/*            %{buildroot}%{_datarootdir}/%{name}/
@@ -73,7 +73,16 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Sun Nov 16 2014 - Simon A. Erat - erat.simon@gmail.com - 0.2.1
+* Wed Nov 26 2014 - Simon A. Erat - erat.simon@gmail.com - 0.2.1
+- tui-browser passes arguments properly now
+- 'make' scripts handle passed arguments properly now
+- 'make' scripts ask for review logfile only if non-verbose (default)
+- removed some old remains and accidently included temp-files
+
+* Wed Nov 26 2014 - Simon A. Erat - erat.simon@gmail.com - 0.2.0
+- Check if tui-browser passes arguments properly
+
+* Sun Nov 16 2014 - Simon A. Erat - erat.simon@gmail.com - 0.2.0
 - Added bash completition
 
 * Mon Nov 03 2014 - Simon A. Erat - erat.simon@gmail.com - 0.1.0

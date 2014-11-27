@@ -1,0 +1,46 @@
+#!/bin/bash
+# ------------------------------------------------------------------------
+#
+# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+#
+# ------------------------------------------------------------------------
+#
+#	Descriptional text here...
+#	and here...
+#
+#
+#
+#	Variables
+#
+	#tBase=$(dirname $ssh_file)
+#
+#	Action
+#
+	tui-echo "Some info about your SSH settings"
+	tui-echo "Know that output has no linebreaks, but the randomart does."
+	tui-echo
+	tui-title "Public key:"
+	tui-echo "$(cat $ssh_file.pub|awk '{print $2}')"
+	tui-echo
+	
+	for thisTask in fingerprint randomart;do
+		[[ -f $ssh_file-$thisTask ]] && \
+			tui-title "${thisTask^}" && \
+			while read line;do tui-echo "$line";done < $ssh_file-$thisTask
+			tui-echo
+	done
+	tui-press

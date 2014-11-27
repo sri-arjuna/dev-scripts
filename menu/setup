@@ -78,6 +78,8 @@ URL_NEW=\"$URL2\"
 EOF
 		done
 	}
+	source /usr/share/dev-scripts/incl/config_files
+	source /usr/share/dev-scripts/incl/load_env
 	[[ -d "$this_dir" ]] || write_git_info
 #
 #	Default configuration
@@ -90,7 +92,7 @@ DIR_BASE=\"\$HOME/.config/dev-scripts\"
 DIR_CFG=\"\$DIR_BASE/prjs\"
 EOF
 	source "$CONFIG"
-	source /usr/share/dev-scripts/incl/load_env
+
 	
 	if [[ ! -f "$CONF_GIT" ]] 
 	then	git_user=""

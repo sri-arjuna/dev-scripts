@@ -1,0 +1,2 @@
+Create or edit ftp configuration.
+Upload files (Note this uploads $ftp_path_local recursivly to $ftp_path_remote

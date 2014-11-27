@@ -1,0 +1,59 @@
+#!/bin/bash
+#
+#	Desription:	Handles GIT Commands - Branch
+#	Lisence:        GPL v3
+#	Author:         Simon A. Erat (sea) ; < < erat . simon @ gmail . com >
+#	Created:	2013.08.24
+#	Changed:	2013.08.28
+	script_version=0.3
+#
+#	Title
+#
+	title="sea's GIT Handler - Branch"
+	sT "$title ($script_version)"
+#
+#	Variables
+#
+	lbl=""
+	new=""
+	args=( $(echo "$4" "$5" "$6" "$7" "$8" ))
+	for arg in "${args[@]}" ;do
+		[ ! "$SEA_DEV_DIR/" = "$SEA_DEV_DIR/$arg" ] && \
+			[ -d "$SEA_DEV_DIR/$arg" ] && \
+			lbl="$arg"
+		[ "-h" = "$arg" ] && \
+			echo -e "branch ($script_version)
+				\rUsage: st dev git branch [LABEL] [NEWBRANCH]
+				\rAdds a new branch to project LABEL
+				\r" && return 99
+	done
+#
+#	Display
+#
+	[ -z $lbl ] && \
+		sE "Please select a project where to create a branch:" && \
+		select lbl in $(PRJ_Select);do break;done
+	[ ! "$arg" = "branch" ] && \
+		[ ! "$arg" = "$lbl" ] && \
+		new="$arg" 
+	source "$SEA_DEV_DIR/$lbl/conf"
+	sE "Selected project:" "$prj_name"
+	current=$(GIT_Branch_List "$lbl"|awk '{print $1}')
+	sE "Current branch:" "$current"
+	sE "Other branches:" "$(GIT_Branch_List $lbl|sed s,$current,\ ,g)"
+	if [ ! -f "$SEA_DEV_DIR/$lbl/git" ]
+	then	ask "Add a GIT module to $prj_name?" && \
+			GIT_New "$lbl"
+		return 1
+	fi
+	
+	if [ "" = "$new" ] 
+	then	ask "Add a new branch?" && \
+			new=$(input "What is the new branch's name? ") || \
+			return 0
+	fi
+	cd "$prj_path"
+	git branch $new
+	ReportStatus $? "Created new branch: $new"
+	sE "All branches of $prj_name:" "$(GIT_Branch_List $lbl)"
+	cd "$OLDPWD"

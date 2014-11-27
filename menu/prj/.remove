@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# 	sea's "dev prj remove" is aimed to assist developers to  
+# 	easy handle their multiple projects.
+#
+# 	This script is written with best intention to help, 
+# 	but there is NO warranty or garanty and I deny ANY responsiblity
+# 	that may or may not affect your system.
+#
+#
+# 	Lisence:        GPL v3
+# 	Author:         Simon A. Erat (sea)
+# 	Release Date:   2012.06.25
+# 	Changed Date:	2013.08.28
+  	script_version=0.4
+#
+#
+#	Title
+#
+	title="sea's Project Manager - Remove a project"
+	sT "$title ($script_version)"
+#
+#	Vars
+#
+	if [ -z $4 ] 
+	then	lbl=""
+	else	lbl=$4
+		ReportStatus $? "Selected $lbl"
+	fi
+	list="$(ls $SEA_DEV_DIR)"
+#
+#	Figure label 
+#
+	sE "Current projects:" "$(echo $list)"
+	[ -z $lbl ] && \
+		sE "Which one to remove?" && \
+		select lbl in $list;do break;done && \
+		ReportStatus $? "Selected $lbl"
+	
+	if ask "Are you sure to remove $lbl?"
+	then	PRJ_Remove $lbl
+	fi

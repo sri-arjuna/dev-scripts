@@ -1,0 +1,4 @@
+Append ssh settings to an existing project or create a new project.
+Edit the ssh configuration file of projects
+Make a new keyfile or use existing keyfile for selected project.
+Connect to the host of supplied project label.
