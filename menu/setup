@@ -24,9 +24,9 @@
 #	Contact:	erat.simon@gmail.com
 #	License:	GNU General Public License (LGPL)
 #	Created:	2014.09.13
-#	Changed:	2014.09.13
-	script_version=0.3
-	TITLE="Dev-Scripts - Setup"
+#	Changed:	2014.11.29
+	script_version=0.4
+	TITLE="$OA_TITLE - Setup"
 #	Description:	Set up the project main settings
 #			
 #
@@ -78,8 +78,7 @@ URL_NEW=\"$URL2\"
 EOF
 		done
 	}
-	source /usr/share/dev-scripts/incl/config_files
-	source /usr/share/dev-scripts/incl/load_env
+	
 	[[ -d "$this_dir" ]] || write_git_info
 #
 #	Default configuration
@@ -92,8 +91,9 @@ DIR_BASE=\"\$HOME/.config/dev-scripts\"
 DIR_CFG=\"\$DIR_BASE/prjs\"
 EOF
 	source "$CONFIG"
-
-	
+	source /usr/share/dev-scripts/incl/config_files
+	source /usr/share/dev-scripts/incl/load_env
+	set -x
 	if [[ ! -f "$CONF_GIT" ]] 
 	then	git_user=""
 		tui-echo "What is your default code host:"
@@ -102,7 +102,7 @@ EOF
 		other)	name=$(tui-read "What is its name (no spaces!):")
 			user=$(tui-read "What is the accountname:")
 			tui-echo
-			tui-echo "Be aware you probably will need to change this value on a 'per project' matter." "Sorry."
+		#	tui-echo "Be aware you probably will need to change this value on a 'per project' matter." "Sorry."
 			URL=$(tui-read "What is the base URL:")
 			tui-echo
 			tui-echo "This is just for convenience."
@@ -117,8 +117,9 @@ EOF
 			;;
 	#	*)	git_user=$(tui-read "What is your ")	;;
 		esac
+
 		source "$this_dir/$host"
-		cat > "$CONF_GIT" << EOF
+		[[ ! -f "$CONF_GIT" ]] && cat > "$CONF_GIT" << EOF
 GIT_ID=$name
 GIT_USER=$user
 GIT_URL=\"$URL\"
@@ -126,6 +127,8 @@ GIT_NEW=\"$URL_NEW\"
 EOF
 	fi
 	source "$CONF_GIT"
+	set +x
+	exit
 #
 #	Catching Arguments
 #

@@ -1,5 +1,5 @@
 Name:        dev-scripts
-Version:     0.2.1
+Version:     0.2.2
 Release:     0%{?dist}
 Summary:     A collection of scripts for developers
 
@@ -73,6 +73,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Nov 29 2014 - Simon A. Erat - erat.simon@gmail.com - 0.2.2
+- Setup hopefully stable now.. rearanged sourced files
+
 * Wed Nov 26 2014 - Simon A. Erat - erat.simon@gmail.com - 0.2.1
 - tui-browser passes arguments properly now
 - 'make' scripts handle passed arguments properly now
