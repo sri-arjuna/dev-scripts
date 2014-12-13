@@ -93,7 +93,6 @@ EOF
 	source "$CONFIG"
 	source /usr/share/dev-scripts/incl/config_files
 	source /usr/share/dev-scripts/incl/load_env
-	set -x
 	if [[ ! -f "$CONF_GIT" ]] 
 	then	git_user=""
 		tui-echo "What is your default code host:"

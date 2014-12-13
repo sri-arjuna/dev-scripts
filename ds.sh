@@ -27,7 +27,7 @@
 #
 	TITLE="Developer Scripts"
 	DIR=/usr/share/dev-scripts
-	project_version="0.1"
+	project_version="0.2.2"
 #
 #	Catch help
 #
