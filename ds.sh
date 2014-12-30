@@ -27,7 +27,7 @@
 #
 	TITLE="Developer Scripts"
 	DIR=/usr/share/dev-scripts
-	project_version="0.2.2"
+	project_version="0.3.0"
 #
 #	Catch help
 #
@@ -60,4 +60,4 @@ For more details, see either one of:
 			-m num \
 			-C "$HOME/.config/dev-scripts/dev-scripts.conf" \
 			-s "$DIR/incl" \
-			$@
+			"${@}"

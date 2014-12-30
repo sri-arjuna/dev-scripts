@@ -1,0 +1,115 @@
+#!/bin/bash
+# ------------------------------------------------------------------------
+#
+# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+#
+# ------------------------------------------------------------------------
+#
+#	
+	source /etc/tui/tui.conf
+	source /etc/tui/commands.conf
+	source /etc/os-release
+	source /etc/tui/apps.conf #|| \
+	[[ 0 -ne $UID ]] || \
+		source $HOME/.config/tui/apps.conf
+		
+	script_version=0.1
+#
+#	Title
+#
+	title="$OA_TITLE - Git Handler - Make?"
+	tui-title "$title ($script_version)"
+#
+#	Variables
+#
+	case $# in
+	5)	shift 3 ;;
+	esac
+	
+	LOG=$LOG_GIT
+	beVerbose=false
+	NONVERBOSE="--quiet"
+	while getopts "vs" opts
+	do 	case $opts in
+		v)	beVerbose=true
+			NONVERBOSE=""
+			;;
+		s)	dummy=$opts	;;
+		esac
+	done
+	shift $(($OPTIND - 1))
+	
+	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
+	then	if [[ -d "$DIR_CFG/$1" ]]
+		then	LBL="$1"
+		else	tui-echo "Please select the label to work with:"
+			select LBL in $(cd "$DIR_CFG";ls|$GREP -v \.);do break;done
+		fi
+	else	LBL="$4"
+	fi
+	
+	source "$DIR_CFG/$LBL/$LBL.conf"
+	
+	if $remoteOnly
+	then	tui-echo "Todo remoteonly"
+		source "$CONF_RPM"
+		source "$CONF_GIT"
+		
+		
+		if [[ -f "$DIR_CFG/$LBL/rpm.conf" ]]
+		then	source "$DIR_CFG/$LBL/rpm.conf"
+			VER=$($GREP Version "$specfile"|$AWK '{print $2}')
+			
+			prj_path+="/$prj_name"
+			[[ -d "$prj_path" ]] && \
+				tui-yesno "Do you want a fresh download?" && \
+				new=true || \
+				new=false
+		
+			tui-bol-dir "$prj_path"
+			cd "$prj_path"
+
+			if $new
+			then	case "${downloadMode:0:3}" in
+				git)	URL=""
+					source "$CONF_GIT"
+					source "$DIR_CFG/$LBL/git.conf"
+					tui-title "Updating code from $URL"
+					if echo * | grep -q "*"
+					then	# Dir is empty
+						git clone "$URL" .
+					else	# Update existing code
+						git pull
+					fi
+					;;
+				sou)	tarballl="$(basename $downloadMode)"
+
+					wget -O "$tarball" $(grep "$downloadMode" "$specfile"|awk '{print $2}')
+					if echo "$tarball"|grep -q ".tar"
+					then	tar -axf "$tarball"
+					elif [[ "zip" = "${tarball:0:(-3)}" ]]
+					then	unzip -uo "$tarball"
+					else	tui-status 1 "Sorry cant handle $tarball yet!"
+						exit 1
+					fi
+					[[ -f "$tarball" ]] && rm -fr "$tarball"
+				esac
+			fi
+		else	tui-status 111 "TODO no rpm package ?"
+		fi
+	else	tui-printf -rS 4 "Skipping, just make that package!"
+	fi

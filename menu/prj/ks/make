@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.4
+	script_version=0.5
 #
 #	Title
 #
@@ -36,6 +36,7 @@
 	beVerbose=false
 	ov=false
 	oPWD=$(pwd)
+	do32bit=false
 	
 	case $# in
 	5)	shift 2 ;;
@@ -80,7 +81,7 @@
 		# Depeing on preset
 		if $do32bit
 		then	ARCH=32
-		else	uname -m | grep -q "_64"  && \
+		else	uname -m | grep -q 64  && \
 				ARCH=64 || \
 				ARCH=32
 		fi
@@ -107,8 +108,7 @@
 		prj_tempdir="/mnt/tmp/${prj_label}"
 	cmd_tmpdir="--tmpdir=\"$prj_tempdir\""
 	
-	[[ ! -z "$do32bit" ]] && \
-		$do32bit && \
+	$do32bit && \
 		PRE="setarch linux32" || \
 		PRE=""
 #
@@ -131,6 +131,7 @@
 		eval $cmd
 		RET=$?
 	else	echo "$cmd" > "$TUI_TEMP_FILE.cmd"
+		echo "$cmd" >> "$LOG"
 		tui-bgjob "$TUI_TEMP_FILE.cmd" "Building $prj_name ($prj_label.iso) live image...   (~30-60m)" "Built $prj_name ($prj_outpath/$prj_label.iso) live image."
 		RET=$?
 	fi

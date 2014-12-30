@@ -14,7 +14,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License (GPL) for more details.
 #
-# You should have received a copy of the GNU General Public License (LGPL)
+# You should have received a copy of the GNU General Public License (GPL)
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 #
 # ------------------------------------------------------------------------
@@ -22,10 +22,10 @@
 #	File:		setup
 #	Author: 	Simon Arjuna Erat (sea)
 #	Contact:	erat.simon@gmail.com
-#	License:	GNU General Public License (LGPL)
+#	License:	GNU General Public License (GPL)
 #	Created:	2014.09.13
-#	Changed:	2014.11.29
-	script_version=0.4
+#	Changed:	2014.12.30
+	script_version=0.5
 	TITLE="$OA_TITLE - Setup"
 #	Description:	Set up the project main settings
 #			
@@ -89,6 +89,7 @@ EOF
 DIR_PRJS=\"\$HOME/Projects\"
 DIR_BASE=\"\$HOME/.config/dev-scripts\"
 DIR_CFG=\"\$DIR_BASE/prjs\"
+DIR_OUT=\"\$HOME/data/out\"
 EOF
 	source "$CONFIG"
 	source /usr/share/dev-scripts/incl/config_files
@@ -148,13 +149,16 @@ EOF
 	tui-echo "Hello $USER, welcome to set up your developement environment"
 	tui-echo "You will be asked a few questions and introduced to this standard"
 	tui-echo
-	
+#
+#	Project Path
+#
 	tui-echo "Where is your projects holding dir?"
 	newdir=$(tui-read "Leave empty for: '$DIR_PRJS'")
 	[[ -z $newdir ]] || tui-conf-set $CONFIG DIR_PRJS $newdir
 	tui-echo
-	
-	#echo $CONFIG_DIR
+#
+#	GIT
+#
 	tui-echo "Please select your default git handler"
 	select newVAL in $(cd "$CONFIG_DIR/gitinfo/" ; ls );do break;done
 	[[ ! -z $newVAL ]] && \
@@ -162,7 +166,7 @@ EOF
 		tui-conf-set $CONF_GIT GIT_ID $name && \
 		tui-conf-set $CONF_GIT GIT_URL $URL
 	tui-echo
-	
+
 	tui-echo "What is your GIT Username on $name?"
 	newVAL=$(tui-read "Leave empty for '$GIT_USER':")
 	[[ -z $newVAL ]] || tui-conf-set "$CONF_GIT" GIT_USER "$newVAL"
@@ -170,8 +174,19 @@ EOF
 	tui-echo "TODO: Save to $HOME/.gitconf if not exists yet!" \
 		"Better yet, read it out if exists.. (low prio)"
 	tui-echo
-	
-	#tui-echo "
+#
+#	MOCK
+#
+	tui-echo "Setting up default mock values"
+	source /etc/os-release
+	tui-conf-set $CONF_MOCK DISTROS "$ID"
+	tui-conf-set $CONF_MOCK RELEASES "$VERSION_ID"
+	tui-conf-set $CONF_MOCK ARCHS "i386 x86_64"
+	tui-status $? "Created $CONF_MOCK"
+	tui-echo
+#
+#	FAS
+#
 	if tui-yesno "Do you have a FAS account?"
 	then	tui-conf-set $CONFIG hasFAS true
 		tui-yesno "Treat all projects as FAS projects?" && \
@@ -184,6 +199,6 @@ EOF
 	
 	tui-echo ""
 	newVAL=$(tui-read "")
-	[[ -z $newVAL ]] || tui-conf-set $CONFIG DIR_PRJS $newVAL
+	[[ -z $newVAL ]] || tui-conf-set $CONF_ XY $newVAL
 	tui-echo
 	

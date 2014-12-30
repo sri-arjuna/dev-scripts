@@ -20,25 +20,45 @@
 # ------------------------------------------------------------------------
 #
 #	
+	source /etc/tui/tui.conf
+	source /etc/os-release
+	source /etc/tui/apps.conf
+	[[ 0 -ne $UID ]] || \
+		source $HOME/.config/tui/apps.conf
+		
 	script_version=0.2
 #
 #	Title
 #
-	title="$OA_TITLE - GIT Handler - Edit Config"
+	title="$OA_TITLE - Mock Handler - Add default settings"
 	tui-title "$title ($script_version)"
-	[[ -f "$CONF_GIT" ]] || \
-		(tui-wait 5s "Please take care to provide all required data...";ds setup)
-	source "$CONF_GIT" || exit 1
 #
 #	Variables
 #
+	case $# in
+	5)	shift 3 ;;
+	esac
+	
+	while getopts "vs" opts
+	do 	case $opts in
+		v)	beVerbose=true
+			NONVERBOSE=""
+			;;
+		s)	dummy=$opts	;;
+		esac
+	done
+	shift $(($OPTIND - 1))
+	
 	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
 	then	if [[ -d "$DIR_CFG/$1" ]]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
-			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
+			select LBL in $(cd "$DIR_CFG";ls|$GREP -v \.);do break;done
 		fi
 	else	LBL="$4"
 	fi
+	
+	#source "$CONF_RPM"
 	source "$DIR_CFG/$LBL/$LBL.conf"
-	tui-edit "$prj_path/.git/config" "$DIR_CFG/$LBL/git.conf" "$CONF_GIT"
+	cp -f $CONF_MOCK "$DIR_CFG/$LBL/mock.conf"
+	tui-edit "$DIR_CFG/$LBL/mock.conf"
