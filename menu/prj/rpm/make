@@ -1,7 +1,7 @@
 #!/bin/bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -26,7 +26,7 @@
 	[[ 0 -eq $UID ]] || \
 		source $HOME/.config/tui/apps.conf
 		
-	script_version=0.6
+	script_version=0.6.3
 #
 #	Title
 #
@@ -95,6 +95,8 @@
 		other=${rel/*\%/}
 		num=$((num+1))
 		$SED s,"$rel","$num%$other",g -i "$specfile"
+		
+	#	( IFS='%{}';rel=$(echo ${rel}|$AWK '{print $1}' ; export rel num other ))
 		return $?
 	}
 #
@@ -110,7 +112,7 @@
 	
 	if $remoteOnly
 	then	# Create temporary home dir...
-		cd $prj_path
+		cd "$prj_path"
 		if [[ ! "" = "$(ls *patch)" ]]
 		then	# Copy patches to sources dir
 			cp *patch $rpm_builddir/SOURCES/
@@ -154,7 +156,9 @@
 	# Make the tarball
 	cd "$prj_path/.."
 	tui-tar "$prj_name"
-	cp "$prj_name.$TAR_EXT" "$DEST/SOURCES/$TARBALL"
+	#pwd
+	#ls -l
+	mv "$prj_name.$TAR_EXT" "$DEST/SOURCES/$TARBALL"
 
 	# Copy the patch files to the sources..
 	$remoteOnly || cd "$prj_path"
@@ -177,14 +181,6 @@
 		RET=$?
 	fi
 	
-	# Increase build number if built was successfull
-	if [[ 0 -eq $RET ]]
-	then	increase_release
-		tui-status $? "Updated releasenumber of $specfile"
-	elif [[ false = $beVerbose ]]
-	then	tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG"
-	fi
-		
 	# Optional task
 	if $useFAS && [[ 0 -eq $RET ]]
 	then	source $HOME/.config/fas/fas.conf
@@ -203,7 +199,18 @@
 		rm -fr "$TMP"
 	fi
 	
+	# Increase build number if built was successfull
+	if [[ 0 -eq $RET ]]
+	then	increase_release
+		tui-status $? "Updated release-(build-)number of:" "$specfile to ${num}"
+	elif [[ false = $beVerbose ]]
+	then	tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG"
+	fi
+	
+	
 	if $rpm_cleandir_after
 	then 	rpmdev-wipetree 2>&1 1>/dev/zero
 		tui-status $? "Cleaned $rpm_builddir"
 	fi
+	
+	exit $RET

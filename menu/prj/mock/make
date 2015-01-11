@@ -27,7 +27,7 @@
 	[[ 0 -ne $UID ]] || \
 		source $HOME/.config/tui/apps.conf
 		
-	script_version=0.7
+	script_version=0.7.2
 #
 #	Title
 #
@@ -70,6 +70,7 @@
 		exit 1
 	fi
 	source "$CONF_MOCK"
+	source "$DIR_CFG/$LBL/mock.conf"
 	touch "$TUI_TEMP_FILE"
 	OPTS="-$opt"
 	if [[ -z "$specfile" ]]
@@ -90,8 +91,6 @@
 	sudo $GREP -q $USER /etc/sudoers 2>/dev/zero && \
 		hasSudo=true || \
 		hasSudo=false
-	# TODO FIXME temp
-	dist=fedora
 #
 #	Use the correct out path
 #
@@ -177,8 +176,11 @@ EOF
 	else	list=$(find|grep result|grep -v debug |grep [46]"\.rpm" 2>/dev/zero ) 2>/dev/zero
 	fi
 	for F in $list;do
-		tui-printf -rS 2 "Copy to $dir_out:" "$(basename $F)"
-		cp -f "$F" "$dir_out"
-		tui-status $? "Copied to $dir_out" "$(basename $F)"
+		tui-printf -rS 2 "Moving to $dir_out:" "$(basename $F)"
+		$hasSudo && \
+			mv -f "$F" "$dir_out" || \
+			cp -f "$F" "$dir_out"
+		tui-status $? "Moved to $dir_out" "$(basename $F)"
 	done
 	
+	exit $RET

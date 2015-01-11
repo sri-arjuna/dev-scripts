@@ -1,6 +1,6 @@
 Name:        dev-scripts
 Version:     0.3.0
-Release:     0%{?dist}
+Release:     41%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
@@ -11,11 +11,13 @@ Source0:     http://sea.fedorapeople.org/review/%{name}/%{name}-%{version}.tar.g
 BuildArch:   noarch
 
 Requires:    tui
+Requires:    awesome-kickstarts
 Requires:    spin-kickstarts
 Requires:    livecd-tools
 Requires:    rpmlint
 Requires:    rpmdevtools
 Requires:    rpm-build
+#Requires:    html5-gen
 Requires:    git
 Requires:    gcc
 Requires:    auto-buildrequires
@@ -78,7 +80,7 @@ rm -rf %{buildroot}
 - Added git (make - remoteonly)
 - Updated 'ds setup' for mock
 
-* Wed Nov 29 2014 - Simon A. Erat - erat.simon@gmail.com - 0.2.2
+* Sat Nov 29 2014 - Simon A. Erat - erat.simon@gmail.com - 0.2.2
 - Setup hopefully stable now.. rearanged sourced files
 
 * Wed Nov 26 2014 - Simon A. Erat - erat.simon@gmail.com - 0.2.1

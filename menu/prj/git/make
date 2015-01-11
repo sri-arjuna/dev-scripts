@@ -65,7 +65,7 @@
 	source "$DIR_CFG/$LBL/$LBL.conf"
 	
 	if $remoteOnly
-	then	tui-echo "Todo remoteonly"
+	then	#tui-echo "Todo remoteonly"
 		source "$CONF_RPM"
 		source "$CONF_GIT"
 		
@@ -89,12 +89,16 @@
 					source "$CONF_GIT"
 					source "$DIR_CFG/$LBL/git.conf"
 					tui-title "Updating code from $URL"
+					#set -x
 					if echo * | grep -q "*"
 					then	# Dir is empty
-						git clone "$URL" .
+						if ! git clone "$URL" . 
+						then	git pull|| exit 1
+						fi
 					else	# Update existing code
-						git pull
+						git pull || exit 1
 					fi
+					#set +x
 					;;
 				sou)	tarballl="$(basename $downloadMode)"
 
@@ -109,7 +113,9 @@
 					[[ -f "$tarball" ]] && rm -fr "$tarball"
 				esac
 			fi
-		else	tui-status 111 "TODO no rpm package ?"
+		else	tui-printf -S 111 "TODO no rpm package ?"
 		fi
-	else	tui-printf -rS 4 "Skipping, just make that package!"
+	else	tui-printf -S 4 "Skipping GIT, just make that package!"
 	fi
+	
+	exit 0

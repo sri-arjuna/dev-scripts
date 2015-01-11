@@ -82,10 +82,9 @@
 		fi
 #	set +x
 		case $T in
-		mock)	add="/$T/make"		;;
-		rpm)	add="/$T/make"		;;
-		livecd)	add="/ks/make" 		;;	
-	#	git)	tui-echo "TODO: $T"	;;
+		mock|git|rpm)
+			add="/$T/make"		;;
+		livecd)	add="/ks/make" 		;;
 		*)	tui-status $RET_TODO "TODO: $T"	;;
 	#	ks)	tui-echo "TODO: $T"
 	#		;;	
