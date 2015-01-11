@@ -1,7 +1,7 @@
 #!/bin/bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -31,7 +31,7 @@
 #
 #	Title
 #
-	title="$OA_TITLE - Git Handler - Make?"
+	title="$OA_TITLE - Git Handler - Make"
 	tui-title "$title ($script_version)"
 #
 #	Variables
@@ -89,7 +89,8 @@
 					source "$CONF_GIT"
 					source "$DIR_CFG/$LBL/git.conf"
 					tui-title "Updating code from $URL"
-					#set -x
+					##
+				#	set -x
 					if echo * | grep -q "*"
 					then	# Dir is empty
 						if ! git clone "$URL" . 
@@ -98,7 +99,7 @@
 					else	# Update existing code
 						git pull || exit 1
 					fi
-					#set +x
+				#	set +x
 					;;
 				sou)	tarballl="$(basename $downloadMode)"
 

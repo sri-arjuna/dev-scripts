@@ -1,7 +1,7 @@
 #!/bin/bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -19,15 +19,18 @@
 #
 # ------------------------------------------------------------------------
 #
-#	
+#	Variables
+#
 	source /etc/tui/tui.conf
 	source /etc/tui/commands.conf
 	source /etc/os-release
 	source /etc/tui/apps.conf #|| \
 	[[ 0 -ne $UID ]] || \
 		source $HOME/.config/tui/apps.conf
-		
-	script_version=0.7.2
+	script_version=0.7.5
+	TOTAL_RET=0
+	TOTAL_COUNT=0
+	TOTAL_SKIP=0
 #
 #	Title
 #
@@ -130,9 +133,13 @@
 		for R in $RELEASES;do
 			for A in $ARCHS;do
 				T="$dist-$R-$A"
-				TASKS+=" $prj_name-$T"
-				echo "mock --target=$A -r $T $SRC 1>>$LOG_MOCK 2>>$LOG_MOCK " > "$TUI_TEMP_DIR/$prj_name-$T"
-				CHECK=$(($CHECK + 1))
+				if [[ -f "/etc/mock/$T.cfg" ]]
+				then	TASKS+=" $prj_name-$T"
+					echo "mock --target=$A -r $T $SRC 1>>$LOG_MOCK 2>>$LOG_MOCK " > "$TUI_TEMP_DIR/$prj_name-$T"
+					CHECK=$(($CHECK + 1))
+				else	tui-status 4 "Configuration for task \"$T\" does not exist."
+					TOTAL_SKIP=$(( $TOTAL_SKIP + 1 ))
+				fi
 			done
 		done
 	done
@@ -147,34 +154,46 @@
 			sudo tui-bgjob "$TUI_TEMP_DIR/$T" "Packaging $T" "Packaged $T" && \
 				rm "$TUI_TEMP_DIR/$T" #&& RET=$(($RET + 1))
 			RET=$?
+			# 
+			[[ 0 -ne $RET ]] && \
+				TOTAL_RET=$(( $TOTAL_RET + 1 ))
+			
+			TOTAL_COUNT=$(( $TOTAL_COUNT + 1 ))
 		done
-	else	echo TODO
+	else	# REQUIRES ROOT, NO SUDO AVAILABLE
 		cat > $TUI_TEMP_FILE << EOF
 for T in $TASKS;do
 	cat $TUI_TEMP_DIR/\$T >> $LOG_MOCK
 	tui-bgjob "\$TUI_TEMP_DIR/\$T" "Packaging \$T" "Packaged \$T" && rm $TUI_TEMP_DIR/\$T
+	[[ 0 -ne \$? ]] && \\
+			TOTAL_RET=$(( \$TOTAL_RET + 1 )) && \\
+			tui-filemgr /var/lib/mock/\$T/result
+	TOTAL_COUNT=$(( \$TOTAL_COUNT + 1 ))
 done
+export TOTAL_RET TOTAL_COUNT
 EOF
 		tui-echo "Please provide root password:"
 		su -c "sh $TUI_TEMP_FILE ; echo \$? > $TUI_TEMP_FILE"
 		RET=$(cat $TUI_TEMP_FILE)
 	fi
 #
-#	Check return value
-#
-	if [[ $RET -ne 0 ]] #tui-status $RET "Made all packages of: $prj_name"
-	then	tui-yesno "View logfile?" && tui-edit $LOG_MOCK
-		exit 1
-	fi
-#
 #	Moving files
 #
 	cd /var/lib/mock
-	if $hasSudo
-	then	list=$(sudo find|grep result|grep -v debug |grep [46]"\.rpm" 2>/dev/zero ) # 2>/dev/zero && \
-		sudo chown -R $USER:$USER $list
-	else	list=$(find|grep result|grep -v debug |grep [46]"\.rpm" 2>/dev/zero ) 2>/dev/zero
-	fi
+	tui-echo
+	#tui-echo "Moving files??"
+	
+	tui-bol-sudo && \
+		list=$(sudo find| $GREP  [64h]"\\."rpm$|grep -v debug) || \
+		(tui-echo "Please provide root password to move files to:" "$dir_out";su -c "list=$(find| $GREP  \[64h\]\\\\.rpm\\$|$GREP -v debug);export list")
+		# OLD
+		# result|grep -v debug |grep [46h]"\.rpm" 2>/dev/zero )  2>/dev/zero
+	
+	tui-bol-sudo && \
+		( sudo chown -R $USER:$USER $list ; RET=$? ; export RET ) || \
+		( tui-echo "Please provide root password to chown the packages for $USER" ; usr="$USER" ; export usr list ; su -c "chown -R $usr:$usr $list ; RET=\$?;export RET" )
+	tui-status $RET "Chowned packages."
+	
 	for F in $list;do
 		tui-printf -rS 2 "Moving to $dir_out:" "$(basename $F)"
 		$hasSudo && \
@@ -182,5 +201,20 @@ EOF
 			cp -f "$F" "$dir_out"
 		tui-status $? "Moved to $dir_out" "$(basename $F)"
 	done
+#
+#	Check return value
+#
+	#tui-echo "Options available:" "$CHECK"
+	#tui-echo "Configurations skipped:" "$(( $CHECK - $TOTAL_COUNT ))"
+	tui-echo
+	tui-echo "There where $CHECK configuration files found and $TOTAL_SKIP entries were skipped."
 	
+	if [[ $TOTAL_RET -ne 0 ]] #tui-status $RET "Made all packages of: $prj_name"
+	then	tui-echo "Sadly, a total of $TOTAL_RET packages failed."
+		tui-yesno "View logfile?" && tui-edit "$LOG_MOCK"
+		#exit 1
+	#else	tui-status $TOTAL_RET ""
+	fi
+	
+	[[ $TOTAL_RET -gt 0 ]] && RET=1  || RET=0
 	exit $RET

@@ -26,7 +26,7 @@
 	[[ 0 -eq $UID ]] || \
 		source $HOME/.config/tui/apps.conf
 		
-	script_version=0.6.4
+	script_version=0.8
 #
 #	Title
 #
@@ -110,13 +110,15 @@
 	ln -sf "$specfile" "$DEST/SPECS/${specfile##*/}"
 	
 	
-	if $remoteOnly
-	then	# Create temporary home dir...
-		cd "$prj_path"
-		if [[ ! "" = "$(ls *patch)" ]]
-		then	# Copy patches to sources dir
-			cp *patch $rpm_builddir/SOURCES/
-		fi
+#	if $remoteOnly
+#	then	# Create temporary home dir...
+	#	cd "$prj_path"
+	#	if [[ ! "" = "$(ls *patch*)" ]] && [[ -d "$prj_name" ]]
+	#	then	# Copy patches to sources dir
+	#		cp *patch* "$prj_name/" # $rpm_builddir/SOURCES/
+	#	fi
+			
+# This is in the GIT module !
 #		prj_path+="/$prj_name"
 #		[[ -d "$prj_path" ]] && \
 #			tui-yesno "Do you want a fresh download?" && \
@@ -151,33 +153,56 @@
 #				[[ -f "$tarball" ]] && rm -fr "$tarball"
 #			esac
 #		fi
-	fi	
+# ---------------------------------
+#	fi	
 
+	# Prepare target directory
+	if $remoteOnly
+	then	newDest="$prj_path/$prj_name"
+	else	newDest="$DEST/SOURCES/"
+	fi
+	
+	# Copy the patch and source files to the sources..
+	cd "$prj_path"
+	LIST=$(grep -i "patch"[0-9]":" "$specfile"|grep -v ^'#'|grep -i -v ^http|grep -v \{|awk '{print $2}')
+	[[ -z "$LIST" ]] || \
+		for L in $LIST;do [[ -f "$L" ]] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied $L";done
+	
+	LIST=$(grep -i "source"[0-9]":" "$specfile"|grep -v ^'#'|grep -i -v ^http|grep -v \{|awk '{print $2}')
+	[[ ! -z "$LIST" ]] && \
+		for L in $LIST;do [[ -f "$L" ]] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied $L";done
+	
+	
+	# A little tweaking for the remoteOnly projects
+	if $remoteOnly
+	then	# Copy the required files also to SOURCES
+		newDest="$DEST/SOURCES/"
+		
+		LIST=$(grep -i "patch"[0-9]":" "$specfile"|grep -v ^'#'|grep -i -v ^http|grep -v \{|awk '{print $2}')
+		[[ -z "$LIST" ]] || \
+			for L in $LIST;do [[ -f "$L" ]] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied $L";done
+
+		LIST=$(grep -i "source"[0-9]":" "$specfile"|grep -v ^'#'|grep -i -v ^http|grep -v \{|awk '{print $2}')
+		[[ ! -z "$LIST" ]] && \
+			for L in $LIST;do [[ -f "$L" ]] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied $L";done
+		# We are in $prj_path, and remote only projects are substored in $prj_name
+		#pwd
+		cd "$prj_name"
+	fi
+	cd ..
+	
 	# Make the tarball
-	cd "$prj_path/.."
 	tui-tar "$prj_name"
-	#pwd
-	#ls -l
 	mv "$prj_name.$TAR_EXT" "$DEST/SOURCES/$TARBALL"
 
-	# Copy the patch files to the sources..
-	$remoteOnly || cd "$prj_path"
-	LIST=$(ls *patch 2>/dev/zero)
-	[[ ! -z "$LIST" ]] && \
-		for L in $LIST;do [[ -f "$L" ]] && tui-printf "Copy $L..." "$TUI_WORK";cp "$L" "$DEST/SOURCES/";tui-status $? "Copied $L";done
-	LIST=$(grep -i "source"[0-9]":" *spec|grep -v ^'#'|grep -i -v ^http|grep -v \{|awk '{print $2}')
-	[[ ! -z "$LIST" ]] && \
-		for L in $LIST;do [[ -f "$L" ]] && tui-printf "Copy $L..." "$TUI_WORK";cp "$L" "$DEST/SOURCES/";tui-status $? "Copied $L";done
-	
 	# Execute the command
-	cmd=
 	cd "$prj_path"
 	if $beVerbose
 	then	rpmbuild $OPTS "$specfile"
 		RET=$?
 	else	echo "rpmbuild $OPTS $NONVERBOSE \"$specfile\" 1>>$LOG 2>>$LOG" > "$TUI_TEMP_FILE"
 		printf '\n%s\n' "$(grep  rpmbuild $TUI_TEMP_FILE)" >> $LOG
-		tui-bgjob "$TUI_TEMP_FILE" "Building $prj_name package..." "Built $prj_name package."
+		tui-bgjob "$TUI_TEMP_FILE" "Building package: \"$prj_name\"..." "Built package: \"$prj_name\"."
 		RET=$?
 	fi
 	
@@ -197,6 +222,7 @@
 		cp "$specfile" "$DEST"
 		tui-status $? "Copied to $DEST:" "$(basename $specfile)"
 		rm -fr "$TMP"
+	else 	echo "Here would be the default output target" > /dev/zero
 	fi
 	
 	# Increase build number if built was successfull
