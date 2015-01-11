@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.5
+	script_version=0.6.1
 #
 #	Title
 #
@@ -66,6 +66,9 @@
 	source "$DIR_BASE/livecd.conf"
 	source "$DIR_CFG/$LBL/livecd.conf"
 
+	# Exit if no kickstart file was found
+	[[ -f "$kickstart" ]] ; tui-status $? "$kickstart exists" || exit 1
+	
 	# Create STRING according to ARCH
 	[[ -z "$arch_styl" ]] && \
 		arch_style=kernel && \
@@ -86,7 +89,7 @@
 				ARCH=32
 		fi
 	fi
-	tui-echo "Building as $ARCH bit iso." "$TUI_INFO"
+	tui-status 111 "Building \"$prj_label\" as $ARCH bit iso."
 	
 	case $arch_style in
 	number)		ARCH=${ARCH}bit	;;
@@ -114,15 +117,21 @@
 #
 #	Display
 #
-	cmd_post="chown $USER:$USER ${prj_label}.iso"
+	cmd_post="chown $USER:$USER ${prj_label}\*.iso"
 	$beVerbose && \
 		verboseString="" || \
 		verboseString="1>>$LOG 2>>\"$LOG\""
 		#verboseString="1>>$LOG 2>>\"$LOG\" > \"$TUI_TEMP_FILE\""
-	sudo grep -q $USER /etc/sudoers && \
-		cmd="sudo $PRE livecd-creator $NONVERBOSE -c \"$kickstart\" -t \"$prj_title\" -f \"$prj_label\" --releasever=$prj_release $cmd_tmpdir $verboseString && sudo $cmd_post" || \
-		cmd="su -c \"$PRE livecd-creator $NONVERBOSE -c \\\"$kickstart\\\" -t \\\"$prj_title\\\" -f \\\"$prj_label\\\" --releasever=$prj_release $cmd_tmpdir $verboseString && $cmd_post\""
-	[[ -f "$kickstart" ]] ;	tui-status $? "$kickstart exists" || exit 1
+	
+	# OLD
+	#sudo grep -q $USER /etc/sudoers && \
+	#	cmd="sudo $PRE livecd-creator $NONVERBOSE -c \"$kickstart\" -t \"$prj_title\" -f \"$prj_label\" --releasever=$prj_release $cmd_tmpdir $verboseString && sudo $cmd_post" || \
+	#	cmd="su -c \"$PRE livecd-creator $NONVERBOSE -c \\\"$kickstart\\\" -t \\\"$prj_title\\\" -f \\\"$prj_label\\\" --releasever=$prj_release $cmd_tmpdir $verboseString && $cmd_post\""
+	# NEW
+	tui-bol-sudo && \
+		cmd="sudo $PRE livecd-creator $NONVERBOSE -c \"$kickstart\" -t \"$prj_title\" -f \"$prj_label\" --releasever=$prj_release $cmd_tmpdir $verboseString && sudo $cmd_post ; RET=\$? ; export RET" || \
+		cmd="tui-echo \"Please provide the root password:\";su -c \"$PRE livecd-creator $NONVERBOSE -c \\\"$kickstart\\\" -t \\\"$prj_title\\\" -f \\\"$prj_label\\\" --releasever=$prj_release $cmd_tmpdir $verboseString && $cmd_post; RET=\$?;export RET\""
+		
 	
 	cd "$prj_path"
 	if $beVerbose

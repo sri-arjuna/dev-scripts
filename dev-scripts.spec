@@ -1,6 +1,6 @@
 Name:        dev-scripts
-Version:     0.3.0
-Release:     41%{?dist}
+Version:     0.3.1
+Release:     0%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
@@ -17,7 +17,7 @@ Requires:    livecd-tools
 Requires:    rpmlint
 Requires:    rpmdevtools
 Requires:    rpm-build
-#Requires:    html5-gen
+Requires:    html5-gen
 Requires:    git
 Requires:    gcc
 Requires:    auto-buildrequires
@@ -75,6 +75,10 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Jan 11 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.1
+- Updated: ds prj rpm make (lbl)
+- Updated: ds prj ks make (lbl)
+
 * Tue Dec 30 2014 - Simon A. Erat - erat.simon@gmail.com - 0.3.0
 - Added mock (add,make)
 - Added git (make - remoteonly)

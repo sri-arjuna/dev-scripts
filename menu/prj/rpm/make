@@ -26,7 +26,7 @@
 	[[ 0 -eq $UID ]] || \
 		source $HOME/.config/tui/apps.conf
 		
-	script_version=0.6.3
+	script_version=0.6.4
 #
 #	Title
 #
@@ -202,7 +202,7 @@
 	# Increase build number if built was successfull
 	if [[ 0 -eq $RET ]]
 	then	increase_release
-		tui-status $? "Updated release-(build-)number of:" "$specfile to ${num}"
+		tui-status $? "Updated releasenumber of:" "$specfile to build:${num}"
 	elif [[ false = $beVerbose ]]
 	then	tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG"
 	fi
