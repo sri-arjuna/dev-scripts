@@ -27,7 +27,7 @@
 	source /etc/tui/apps.conf #|| \
 	[[ 0 -ne $UID ]] || \
 		source $HOME/.config/tui/apps.conf
-	script_version=0.7.5
+	script_version=0.7.7
 	TOTAL_RET=0
 	TOTAL_COUNT=0
 	TOTAL_SKIP=0
@@ -188,19 +188,28 @@ EOF
 		(tui-echo "Please provide root password to move files to:" "$dir_out";su -c "list=$(find| $GREP  \[64h\]\\\\.rpm\\$|$GREP -v debug);export list")
 		# OLD
 		# result|grep -v debug |grep [46h]"\.rpm" 2>/dev/zero )  2>/dev/zero
-	
-	tui-bol-sudo && \
-		( sudo chown -R $USER:$USER $list ; RET=$? ; export RET ) || \
-		( tui-echo "Please provide root password to chown the packages for $USER" ; usr="$USER" ; export usr list ; su -c "chown -R $usr:$usr $list ; RET=\$?;export RET" )
-	tui-status $RET "Chowned packages."
-	
-	for F in $list;do
-		tui-printf -rS 2 "Moving to $dir_out:" "$(basename $F)"
-		$hasSudo && \
-			mv -f "$F" "$dir_out" || \
-			cp -f "$F" "$dir_out"
-		tui-status $? "Moved to $dir_out" "$(basename $F)"
-	done
+	if [[ ! -z "$list" ]]
+	then	# list variable is NOT empty
+		tui-bol-sudo && \
+			( sudo chown -R $USER:$USER $list ; RET=$? ; export RET ) || \
+			( tui-echo "Please provide root password to chown the packages for $USER" ; usr="$USER" ; export usr list ; su -c "chown -R $usr:$usr $list ; RET=\$?;export RET" )
+		tui-status $RET "Chowned packages."
+		
+		# Shorten the list
+		LIST=""
+		for l in $list;do
+			echo "$LIST" | grep -q "$l" || \
+				LIST+="\n$l"
+		done
+		
+		tui-echo
+		tui-echo "Moving packages to $dir_out:"
+		for F in $LIST;do
+			tui-printf -rS 2 " * Moving: $(basename $F)"
+			mv -f "$F" "$dir_out"
+			tui-status $? " * Moved: $(basename $F)"
+		done
+	fi
 #
 #	Check return value
 #

@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.6.1
+	script_version=0.6.4
 #
 #	Title
 #
@@ -68,9 +68,9 @@
 
 	# Exit if no kickstart file was found
 	[[ -f "$kickstart" ]] ; tui-status $? "$kickstart exists" || exit 1
-	
+#set -x	
 	# Create STRING according to ARCH
-	[[ -z "$arch_styl" ]] && \
+	[[ -z "$arch_style" ]] && \
 		arch_style=kernel && \
 		tui-conf-set "$DIR_CFG/$LBL/livecd.conf" arch_style $arch_style
 	
@@ -109,7 +109,7 @@
 	# Generate the tempdir string
 	[[ -z "$prj_tempdir" ]] && \
 		prj_tempdir="/mnt/tmp/${prj_label}"
-	cmd_tmpdir="--tmpdir=\"$prj_tempdir\""
+	cmd_tmpdir="--tmpdir=\"$prj_tempdir/$prj_label\""
 	
 	$do32bit && \
 		PRE="setarch linux32" || \
@@ -117,7 +117,7 @@
 #
 #	Display
 #
-	cmd_post="chown $USER:$USER ${prj_label}\*.iso"
+	cmd_post="chown $USER:$USER ${prj_label}*.iso"
 	$beVerbose && \
 		verboseString="" || \
 		verboseString="1>>$LOG 2>>\"$LOG\""
@@ -132,7 +132,7 @@
 		cmd="sudo $PRE livecd-creator $NONVERBOSE -c \"$kickstart\" -t \"$prj_title\" -f \"$prj_label\" --releasever=$prj_release $cmd_tmpdir $verboseString && sudo $cmd_post ; RET=\$? ; export RET" || \
 		cmd="tui-echo \"Please provide the root password:\";su -c \"$PRE livecd-creator $NONVERBOSE -c \\\"$kickstart\\\" -t \\\"$prj_title\\\" -f \\\"$prj_label\\\" --releasever=$prj_release $cmd_tmpdir $verboseString && $cmd_post; RET=\$?;export RET\""
 		
-	
+#set +x ; exit	
 	cd "$prj_path"
 	if $beVerbose
 	then	cmd="${cmd/$verboseString/}"
@@ -149,7 +149,8 @@
 	[[ ! -z "$prj_tempdir" ]] && cd "$prj_tempdir" && rm -fr * && cd "$prj_path"
 	
 	if [[ 0 -eq $RET ]]
-	then	mv *iso "$prj_outpath"
+	then	# Its already been chown'ed
+		mv *iso "$prj_outpath"
 	elif [[ false = $beVerbose ]]
 	then	tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG"
 	fi
