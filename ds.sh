@@ -26,13 +26,15 @@
 #	Variables
 #
 	TITLE="Developer Scripts"
-	DIR=/usr/share/dev-scripts
+	APP=dev-scripts
+	DIR=/usr/share/$APP
 	project_version="0.3.0"
+	config=$HOME/.config/$APP/$APP.conf
 #
 #	Catch help
 #
 	case "$1" in
-	"-h")	echo "$TITLE ($project_version)
+	"-h")	echo "$APP ($TITLE) ($project_version)
 Usage:	ds [section ..] [task] [options] [project]
 
 Examples:
@@ -53,11 +55,10 @@ For more details, see either one of:
 #
 #	Action
 #
-	tui-browser 	-t "$TITLE" \
+	tui-browser 	-T "$TITLE" \
+			-D Section \
+			-F Commands \
 			-p "$DIR/menu" \
-			-d Section \
-			-f Commands \
-			-m num \
-			-C "$HOME/.config/dev-scripts/dev-scripts.conf" \
+			-c "$config" \
 			-s "$DIR/incl" \
 			"${@}"
