@@ -26,7 +26,7 @@
 	[[ 0 -eq $UID ]] || \
 		source $HOME/.config/tui/apps.conf
 		
-	script_version=0.8
+	script_version=0.8.1
 #
 #	Title
 #
@@ -109,53 +109,6 @@
 	[[ -d "$rpm_builddir" ]] || rpmdev-setuptree
 	ln -sf "$specfile" "$DEST/SPECS/${specfile##*/}"
 	
-	
-#	if $remoteOnly
-#	then	# Create temporary home dir...
-	#	cd "$prj_path"
-	#	if [[ ! "" = "$(ls *patch*)" ]] && [[ -d "$prj_name" ]]
-	#	then	# Copy patches to sources dir
-	#		cp *patch* "$prj_name/" # $rpm_builddir/SOURCES/
-	#	fi
-			
-# This is in the GIT module !
-#		prj_path+="/$prj_name"
-#		[[ -d "$prj_path" ]] && \
-#			tui-yesno "Do you want a fresh download?" && \
-#			rm -fr "$prj_path" && \
-#			new=true || \
-#			new=false
-#		mkdir -p "$prj_path"
-#		cd "$prj_path"
-		
-#		if $new
-#		then	case "${downloadMode:0:3}" in
-#			git)	URL=""
-#				source "$CONF_GIT"
-#				source "$DIR_CFG/$LBL/git.conf"
-				#VER=$(grep -i "version:" "$specfile"|awk '{print $2}')
-				#[[ -z "$URL" ]] && \
-				#	URL="$GIT_URL/$GIT_USER/$prj_git" && \
-				#	[[ G = ${GIT_ID:0:1} ]] && URL+=".git"
-#				tui-title "$URL"
-#				git clone "$URL" .
-#				;;
-#			sou)	tarballl="$(basename $downloadMode)"
-			
-#				wget -O "$tarball" $(grep "$downloadMode" "$specfile"|awk '{print $2}')
-#				if echo "$tarball"|grep -q ".tar"
-#				then	tar -axf "$tarball"
-#				elif [[ "zip" = "${tarball:0:(-3)}" ]]
-#				then	unzip -uo "$tarball"
-#				else	tui-status 1 "Sorry cant handle $tarball yet!"
-#					exit 1
-#				fi
-#				[[ -f "$tarball" ]] && rm -fr "$tarball"
-#			esac
-#		fi
-# ---------------------------------
-#	fi	
-
 	# Prepare target directory
 	if $remoteOnly
 	then	newDest="$prj_path/$prj_name"
@@ -186,7 +139,6 @@
 		[[ ! -z "$LIST" ]] && \
 			for L in $LIST;do [[ -f "$L" ]] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied $L";done
 		# We are in $prj_path, and remote only projects are substored in $prj_name
-		#pwd
 		cd "$prj_name"
 	fi
 	cd ..
@@ -228,7 +180,7 @@
 	# Increase build number if built was successfull
 	if [[ 0 -eq $RET ]]
 	then	increase_release
-		tui-status $? "Updated releasenumber of:" "$specfile to build:${num}"
+		tui-status $? "Updated $specfile to build:" "Next: $(grep -i "version:" "$specfile"|awk '{print $2}')-${num}"
 	elif [[ false = $beVerbose ]]
 	then	tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG"
 	fi

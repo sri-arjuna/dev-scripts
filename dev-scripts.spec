@@ -1,6 +1,6 @@
 Name:        dev-scripts
 Version:     0.3.1
-Release:     33%{?dist}
+Release:     52%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
@@ -75,6 +75,12 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Jan 19 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.1
+- Updated: ds prj ks make, properly moves the iso files now
+- Updated: ds prj git make, should git clone if project is not found,
+-                           text on skipping
+- Updated: ds prj rpm make, text arrangement for build update
+
 * Sun Jan 11 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.1
 - Updated: ds prj rpm make (lbl)
 - Updated: ds prj ks make (lbl)

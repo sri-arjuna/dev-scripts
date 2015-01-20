@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.6.4
+	script_version=0.7.1
 #
 #	Title
 #
@@ -117,7 +117,7 @@
 #
 #	Display
 #
-	cmd_post="chown $USER:$USER ${prj_label}*.iso"
+	cmd_post="chown $USER:$USER ${prj_label}.iso"
 	$beVerbose && \
 		verboseString="" || \
 		verboseString="1>>$LOG 2>>\"$LOG\""
@@ -141,19 +141,29 @@
 		RET=$?
 	else	echo "$cmd" > "$TUI_TEMP_FILE.cmd"
 		echo "$cmd" >> "$LOG"
-		tui-bgjob "$TUI_TEMP_FILE.cmd" "Building $prj_name ($prj_label.iso) live image...   (~30-60m)" "Built $prj_name ($prj_outpath/$prj_label.iso) live image."
+		tui-bgjob "$TUI_TEMP_FILE.cmd" "Building $prj_name ($prj_label.iso) live image...   (~30-60m)" "Built $prj_name ($prj_path/$prj_label.iso) live image."
 		RET=$?
 	fi
 		
-	# Clean up temporary data, specialy if it failed....
-	[[ ! -z "$prj_tempdir" ]] && cd "$prj_tempdir" && rm -fr * && cd "$prj_path"
-	
+#set -x	
 	if [[ 0 -eq $RET ]]
 	then	# Its already been chown'ed
-		mv *iso "$prj_outpath"
+		tui-bol-dir "$prj_outpath/"
+		[[ -f "$PWD/${prj_label}.iso" ]] && \
+			mv "$PWD/${prj_label}.iso" "$prj_outpath/"
+		tui-status $? "Moved to $prj_outpath/" "$prj_label.iso"
 	elif [[ false = $beVerbose ]]
 	then	tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG"
 	fi
 	
+	# Clean up temporary data, specialy if it failed....
+	if [[ ! -z "$prj_tempdir" ]] 
+	then 	cd "$prj_tempdir"
+		RET2=-1
+		tui-bol-sudo && \
+			(sudo rm -fr * ; RET2=$? ; export RET2 ) || \
+			su -c "rm -fr * ; RET2=\$? ; export RET2"
+		tui-status $RET2 "Removed tempdirectories: $prj_tempdir"
+	fi
 	cd "$oPWD"
 	exit $RET
