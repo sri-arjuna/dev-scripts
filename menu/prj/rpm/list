@@ -21,48 +21,112 @@
 #
 #	
 	. tui
+	. $HOME/.config/dev-scripts/dev-scripts.conf
+	. $HOME/.config/dev-scripts/rpm.conf
 	script_version=0.3
 #
 #	Title
 #
 	title="$OA_TITLE - RPM Handler - List built packages"
-	[[ ! list = $(basename $0) ]] && tui-title "$title ($script_version)"
+	[ ! list = "$(basename $0)" ] && tui-title "$title ($script_version)"
 	oPWD="$(pwd)"
 #
 #	Variables
 #
 	OF=""
-	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
-	then	#echo "less args"
-		if [[ -d "$DIR_CFG/$1" ]]
+	[ -z "$3" ] || shift 3
+	
+	if [ -z "$1" ] # || [[ ! -z "$LBL" ]]
+	then	tui-echo "Please select the label to work with:"
+		LBL=$(tui-select $(cd "$DIR_CFG";ls))
+	else	if [ -d "$DIR_CFG/$1" ]
 		then	LBL="$1"
 			OF="$2"
-		else	tui-echo "Please select the label to work with:"
-			select LBL in $(cd "$DIR_CFG";ls);do break;done
 		fi
-	else	LBL="$4"
-		OF="$5"
+	fi
+	if [ ! -z "$OF" ]
+	then	# Its not empty
+		set -x
+		d=$(dirname "$OF")
+		b=$(basename "$OF")
+		[ "$d" = "$b" ] && OF="$oPWD/$OF"
+		[ "." = "$d" ] && OF="$oPWD/$OF"
+		set +x
 	fi
 	
-	source "$CONF_RPM"
+	TASK="rpm mock"
+	
+	#source "$CONF_RPM"	# Das failt -- tui-browser issue :(
+	source "$DIR_CFG/../rpm.conf"
 	source "$DIR_CFG/$LBL/$LBL.conf"
 	source "$DIR_CFG/$LBL/rpm.conf"
+	source "$DIR_CFG/$LBL/git.conf"
+	#source "$CONF_MOCK"
+	VER=$(grep Version "$specfile"|awk '{print $2}')
+	
+	MOCK="$DIR_CFG/$LBL/mock.conf"
+	if [ -f "$MOCK" ]
+	then	source "$MOCK"
+		source "$DIR_CFG/../mock.conf"
+		TASK+=" mock"
+	fi
 #
 #	Display
 #
-	if [[ ! -z "$OF" ]] 
-	then	# This works
-		[[ -d "$(dirname $OF)" ]] || mkdir -p "$(dirname $OF)"
-		touch "$OF"
-		list=$(find "$rpm_builddir/"|grep "$prj_name")
-		echo "$list"|grep rpm$ > "$OF"
-	else	# But here is no output
-		cd "$rpm_builddir/"
-		list=$(find "$rpm_builddir/"|grep rpm$|grep "$prj_name")
-		if [[ -z "$list" ]]
-		then	tui-status 1 "No packages for \"$prj_name\" found..."
-		else	echo "$list"|while read line;do tui-echo "${line:2}";done
-		fi
-		#find $rpm_builddir|grep $prj_name|grep rpm$
-	fi
+	#set -x
+	
+	
+	#echo "$rpm_builddir" ; exit
+	
+	for task in $TASK
+	do	case $task in
+		rpm)
+			if [ -z "$rpm_builddir" ]
+			then	tui-status 1 "Path not found: $rpm_builddir"
+				exit $?
+			fi
+			cd "$rpm_builddir/"
+			list=$(find |$GREP rpm$|$GREP "$prj_name"|$GREP "$prj_name"|$GREP \\.rpm$ 2>/dev/zero) 2>/dev/zero
+			
+			if [ ! -z "$OF" ]
+			then	# This works
+				[ -d "$(dirname $OF)" ] || mkdir -p "$(dirname $OF)"
+				[ -f "$OF" ] && rm -f "$OF"
+				touch "$OF"
+				echo "$list" > "$OF"
+			else	# But here is no output
+				
+				if [[ -z "$list" ]]
+				then	tui-status 1 "No packages for \"$prj_name\" found..."
+				else	echo "$list"|while read line;do tui-echo "${line:2}";done
+				fi
+				#find $rpm_builddir|$GREP $prj_name|$GREP rpm$
+			fi
+			;;
+		mock)	
+			if [ ! -d /var/lib/mock ]
+			then	tui-status 1 "Path not found: /var/lib/mock"
+				exit $?
+			fi
+			cd /var/lib/mock
+			list=$(find |$GREP rpm$|$GREP "$prj_name"|$GREP "$prj_name"|$GREP \\.rpm$ 2>/dev/zero) 2>/dev/zero
+			
+			if [ ! -z "$OF" ]
+			then	# This works
+				[ -d "$(dirname $OF)" ] || mkdir -p "$(dirname $OF)"
+				[ -f "$OF" ] && rm -f "$OF"
+				touch "$OF"
+				echo "$list" > "$OF"
+			else	# But here is no output
+				
+				if [ -z "$list" ]
+				then	tui-status 1 "No packages for \"$prj_name\" found..." > /dev/zero
+				else	#echo "$list"|while read line;do tui-echo "${line:2}";done
+					tui-list -n "$list"
+				fi
+				#find $rpm_builddir|$GREP $prj_name|$GREP rpm$
+			fi
+			;;
+		esac
+	done
 	cd "$oPWD"

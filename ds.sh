@@ -28,7 +28,7 @@
 	TITLE="Developer Scripts"
 	APP=dev-scripts
 	DIR=/usr/share/$APP
-	project_version="0.3.0"
+	project_version="0.3.2"
 	config=$HOME/.config/$APP/$APP.conf
 #
 #	Catch help

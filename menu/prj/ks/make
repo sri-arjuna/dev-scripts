@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.7.1
+	script_version=0.7.2
 #
 #	Title
 #
@@ -159,7 +159,7 @@
 	# Clean up temporary data, specialy if it failed....
 	if [[ ! -z "$prj_tempdir" ]] 
 	then 	cd "$prj_tempdir"
-		RET2=-1
+		RET2=1
 		tui-bol-sudo && \
 			(sudo rm -fr * ; RET2=$? ; export RET2 ) || \
 			su -c "rm -fr * ; RET2=\$? ; export RET2"
