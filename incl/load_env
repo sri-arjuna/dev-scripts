@@ -1,5 +1,7 @@
 #!/bin/bash
-oPWD="$(pwd)"
+readonly oPWD="$(pwd)"
 OA_TITLE="Dev-Scripts"
 OA_VER=$script_version
 ssh_file=$HOME/.ssh/id_rsa
+
+#export oPWD OA_TITLE OA_VER ssh_file

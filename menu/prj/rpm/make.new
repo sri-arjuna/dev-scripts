@@ -58,7 +58,7 @@
 	then	if [[ -d "$DIR_CFG/$1" ]]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
-			LBL=$(tui-select $(cd "$DIR_CFG";ls|$GREP -v \.{cmd,info,help}))
+			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
 		fi
 	else	LBL="$4"
 	fi
@@ -80,7 +80,7 @@
 			exit $?
 		fi
 	fi
-	VER=$($GREP Version "$specfile"|awk '{print $2}')
+	VER=$(grep Version "$specfile"|awk '{print $2}')
 	TARBALL="$prj_name-$VER.$TAR_EXT"
 	DEST="$rpm_builddir"
 	[[ -z "$rpm_cleandir" ]] && rpm_cleandir=true
@@ -90,7 +90,7 @@
 	increase_release() { #
 	# Automaticly updates the release (build) number
 	#
-		rel=$($GREP -i "release:" "$specfile"|$AWK '{print $2}')
+		rel=$(grep -i "release:" "$specfile"|awk '{print $2}')
 		num=${rel/\%*/}
 		other=${rel/*\%/}
 		num=$((num+1))
@@ -117,11 +117,11 @@
 	
 	# Copy the patch and source files to the sources..
 	cd "$prj_path"
-	LIST=$($GREP -i "patch"[0-9]":" "$specfile"|$GREP -v ^'#'|$GREP -i -v ^http|$GREP -v \{|awk '{print $2}')
+	LIST=$(grep -i "patch"[0-9]":" "$specfile"|grep -v ^'#'|grep -i -v ^http|grep -v \{|awk '{print $2}')
 	[[ -z "$LIST" ]] || \
 		for L in $LIST;do [[ -f "$L" ]] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied $L";done
 	
-	LIST=$($GREP -i "source"[0-9]":" "$specfile"|$GREP -v ^'#'|$GREP -i -v ^http|$GREP -v \{|awk '{print $2}')
+	LIST=$(grep -i "source"[0-9]":" "$specfile"|grep -v ^'#'|grep -i -v ^http|grep -v \{|awk '{print $2}')
 	[[ ! -z "$LIST" ]] && \
 		for L in $LIST;do [[ -f "$L" ]] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied $L";done
 	
@@ -131,12 +131,11 @@
 	then	# Copy the required files also to SOURCES
 		newDest="$DEST/SOURCES/"
 		
-		tui-status -r 2 "Generating list..."
-		LIST=$($GREP -i "patch"[0-9]":" "$specfile"|$GREP -v ^'#'|$GREP -i -v ^http|$GREP -v \{|awk '{print $2}')
+		LIST=$(grep -i "patch"[0-9]":" "$specfile"|grep -v ^'#'|grep -i -v ^http|grep -v \{|awk '{print $2}')
 		[[ -z "$LIST" ]] || \
 			for L in $LIST;do [[ -f "$L" ]] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied $L";done
 
-		LIST=$($GREP -i "source"[0-9]":" "$specfile"|$GREP -v ^'#'|$GREP -i -v ^http|$GREP -v \{|awk '{print $2}')
+		LIST=$(grep -i "source"[0-9]":" "$specfile"|grep -v ^'#'|grep -i -v ^http|grep -v \{|awk '{print $2}')
 		[[ ! -z "$LIST" ]] && \
 			for L in $LIST;do [[ -f "$L" ]] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied $L";done
 		# We are in $prj_path, and remote only projects are substored in $prj_name
@@ -154,51 +153,42 @@
 	then	rpmbuild $OPTS "$specfile"
 		RET=$?
 	else	echo "rpmbuild $OPTS $NONVERBOSE \"$specfile\" 1>>$LOG 2>>$LOG" > "$TUI_TEMP_FILE"
-		printf "$($GREP  rpmbuild $TUI_TEMP_FILE)\n" >> $LOG
+		printf "$(grep  rpmbuild $TUI_TEMP_FILE)\n" >> $LOG
 		tui-bgjob "$TUI_TEMP_FILE" "Building package: \"$prj_name\"..." "Built package: \"$prj_name\"."
 		RET=$?
 	fi
 	
-	# Optional task (fas)
+	# Optional task
 	if $useFAS && [[ 0 -eq $RET ]]
 	then	source $HOME/.config/fas/fas.conf
 		DEST="$FAS_REVIEW/$prj_name"
-	else 	#echo "Here would be the default output target" > /dev/zero
-		DEST="$DIR_OUT"
+		TMP="$TUI_TEMP_DIR/$prj_name.info"
+		/usr/share/dev-scripts/menu/prj/rpm/list $LBL "$TMP"
+		[ -d "$DEST" ] || mkdir -p "$DEST"
+		while read line;do
+			if [ ! -z "$line" ]
+			then	[ -f "$line" ] && cp "$line" "$DEST"/
+				tui-status $? "Copied to $DEST:" "$(basename $line)"
+			fi
+		done<"$TMP"
+		cp "$rpm_builddir/SOURCES/$TARBALL" "$DEST"
+		tui-status $? "Copied to $DEST:" "$(basename $TARBALL)"
+		cp "$specfile" "$DEST"
+		tui-status $? "Copied to $DEST:" "$(basename $specfile)"
+		rm -fr "$TMP"
+	else 	echo "Here would be the default output target" > /dev/zero
 	fi
-	[ -d "$DEST" ] || mkdir -p "$DEST"
-	
-	TMP="$TUI_TEMP_DIR/$prj_name.info"
-	touch "$TMP"
-	/usr/share/dev-scripts/menu/prj/rpm/list $LBL "$TMP"
-	#ds prj rpm list $LBL "$TMP" || exit 
-	cat "$TMP"	# Should not be empty after building...
-	
-	while read line;do
-		if [ ! -z "$line" ]
-		then	[ -f "$line" ] && cp "$line" "$DEST"/
-			tui-status $? "Copied to $DEST:" "$(basename $line)"
-		fi
-	done<"$TMP"
-	
-	cp "$rpm_builddir/SOURCES/$TARBALL" "$DEST"
-	tui-status $? "Copied to $DEST:" "$(basename $TARBALL)"
-	cp "$specfile" "$DEST"
-	tui-status $? "Copied to $DEST:" "$(basename $specfile)"
-	
-	rm -fr "$TMP"
-	
 	
 	# Increase build number if built was successfull
 	if [[ 0 -eq $RET ]]
 	then	increase_release
-		tui-status $? "Updated $specfile to build:" "Next: $($GREP -i "version:" "$specfile"|awk '{print $2}')-${num}"
+		tui-status $? "Updated $specfile to build:" "Next: $(grep -i "version:" "$specfile"|awk '{print $2}')-${num}"
 	elif [[ false = $beVerbose ]]
 	then	tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG"
 	fi
 	
 	
-	if [ $RET -eq 0 ] && $rpm_cleandir_after
+	if $rpm_cleandir_after
 	then 	rpmdev-wipetree 2>&1 1>/dev/zero
 		tui-status $? "Cleaned $rpm_builddir"
 	fi

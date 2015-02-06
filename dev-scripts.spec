@@ -1,6 +1,6 @@
 Name:        dev-scripts
-Version:     0.3.2
-Release:     2%{?dist}
+Version:     0.3.3
+Release:     0%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
@@ -80,8 +80,11 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Feb 05 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.3
+- Updated:  ds prj rpm list <lbl> <tmpfile>, should work better now
+
 * Fri Jan 30 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.2
-- Update:  ds prj ks make, failsafe value is now 1  instead of -1
+- Updated:  ds prj ks make, failsafe value is now 1  instead of -1
 
 * Mon Jan 19 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.2
 - Updated: ds prj ks make, properly moves the iso files now

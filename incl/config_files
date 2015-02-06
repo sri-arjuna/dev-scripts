@@ -20,12 +20,18 @@
 #
 #	This is a 'sanity' check for folders
 #
-	[[ -d $HOME/.config/dev-scripts ]] || \
+	[ -d $HOME/.config/dev-scripts ] || \
 		( tui-bol-dir $HOME/.config/dev-scripts/{prjs,gitinfo,log} ; ds setup )
 #
 #	Load those conf files, if exists
 #
 	for F in $CONF_GIT $CONF_RPM $CONF_KOJI $CONF_SSH $CONF_LIVECD $CONF_MOCK
 	do
-		[[ -f "$F" ]] && source "$F" && printf "."
+		[ -f "$F" ] && source "$F" && printf "."
 	done
+#
+#	Export the default configurations
+#
+	export CONF_SSH CONF_GIT CONF_RPM CONF_KOJI CONF_RPM CONF_LIVECD CONF_MOCK
+	export LOG_SSH LOG_GIT LOG_RPM LOG_KOJI LOG_RPM LOG_LIVECD LOG_MOCK
+	

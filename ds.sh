@@ -28,8 +28,10 @@
 	TITLE="Developer Scripts"
 	APP=dev-scripts
 	DIR=/usr/share/$APP
-	project_version="0.3.2"
+	project_version="0.3.3"
 	config=$HOME/.config/$APP/$APP.conf
+	readonly oPWD="$(pwd)"
+	export oPWD
 #
 #	Catch help
 #
