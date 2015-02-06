@@ -134,7 +134,11 @@
 				[ -d "$(dirname $OF)" ] || mkdir -p "$(dirname $OF)"
 				[ -f "$OF" ] && rm -f "$OF"
 				touch "$OF"
-				echo "$list" > "$OF"
+				newlist=""
+				for l in $list;do
+					newlist+=" ${l/./var/lib/mock}\n"
+				done
+				printf "$newlist" > "$OF"
 			else	# But here is no output
 				tui-title "$title ($task)"
 				if [ -z "$list" ]

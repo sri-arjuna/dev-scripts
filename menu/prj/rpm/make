@@ -172,7 +172,7 @@
 	touch "$TMP"
 	/usr/share/dev-scripts/menu/prj/rpm/list $LBL "$TMP"
 	#ds prj rpm list $LBL "$TMP" || exit 
-	cat "$TMP"	# Should not be empty after building...
+	#cat "$TMP"	# Should not be empty after building...
 	
 	while read line;do
 		if [ ! -z "$line" ]
