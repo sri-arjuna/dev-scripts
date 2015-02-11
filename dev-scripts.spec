@@ -1,5 +1,5 @@
 Name:        dev-scripts
-Version:     0.3.3
+Version:     0.3.4
 Release:     0%{?dist}
 Summary:     A collection of scripts for developers
 
@@ -80,6 +80,11 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Feb 01 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.4
+- Updated:    ds prj <git,ks,mock,rpm> add
+- Updated:    ds prj rpm list
+- Added:      ds prj rpm unpack
+
 * Thu Feb 05 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.3
 - Updated:  ds prj rpm list <lbl> <tmpfile>, should work better now
 

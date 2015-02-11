@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -20,27 +20,27 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.6
+	script_version=0.7
 #
 #	Title
 #
 	title="$OA_TITLE - GIT Handler - Add repositry"
 	tui-title "$title ($script_version)"
-	[[ -f "$CONF_GIT" ]] || \
+	[ -f "$CONF_GIT" ] || \
 		(tui-wait 5s "Please take care to provide all required data...";ds setup)
 	source "$CONF_GIT" || ds setup
 #
 #	Variables
 #
-	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
-	then	if [[ -d "$DIR_CFG/$1" ]]
+	if [ -z "$4" ] # || [[ ! -z "$LBL" ]]
+	then	if [ -d "$DIR_CFG/$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
 			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
 		fi
 	else	LBL="$4"
 	fi
-	[[ -f "$CONF_GIT" ]] && source "$CONF_GIT"
+	[ -f "$CONF_GIT" ] && source "$CONF_GIT"
 	source "$DIR_CFG/$LBL/$LBL.conf"
 	tConf="$DIR_CFG/$LBL/git.conf"
 	
@@ -77,38 +77,38 @@ Example Readme
 	if tui-yesno "Is this a regular $GIT_ID project?"
 	then	tui-echo "What is the according GIT project name?"
 		prj_git=$(tui-read "Leave empty for: '$prj_name'")
-		[[ -z "$prj_git" ]] && prj_git="$prj_name"
+		[ -z "$prj_git" ] && prj_git="$prj_name"
 		tui-conf-set "$tConf" prj_git "$prj_git"
 		. "$tConf"
 		
 		case $GIT_ID in
 		GitHub)		URL="\$GIT_URL/\$GIT_USER/\$prj_git.git"	;;
-		SourcceForge)	URL="$GIT_URL/p/$prj_git/code"			;;
+		SourceForge)	URL="$GIT_URL/p/$prj_git/code"			;;
 		*)		tui-echo "Unkown host, leave empty for 'default':"
 				template="\$GIT_URL/\$GIT_USER/\$prj_git"
 				tui-echo "$template" "$(eval $template)"
 				use=$(tui-read "What is the full URL:")
-				[[ -z "$use" ]] && \
+				[ -z "$use" ] && \
 					URL="$template" || \
 					URL="$use"
 		esac
 	else	URL=$(tui-read "What is the full URL to the git repositry?")
 	fi
-	tui-conf-set "$tConf" URL "\"$URL\""
-	[[ -z "$URL_NEW" ]] || tui-conf-set "$tConf" URL_NEW "\"$URL_NEW\""
+	tui-conf-set "$tConf" URL "$URL"
+	[ -z "$URL_NEW" ] || tui-conf-set "$tConf" URL_NEW "$URL_NEW"
 	
 #
 #	Initialize or use local git repositry
 #	
-	cd "$prj_path"
+	cd "$prj_path" || exit 1
 	if $remoteOnly
-	then	msg="Its remote only, nothing to do..."
+	then	msg="Its remote only, nothing to do yet..."
 		RET=4
-	else	if [[ -d .git ]]
+	else	if [ -d .git ]
 		then	msg="There is already a git repositry."
 			RET=4
 		else	tui-echo "Preparing first git action"
-			if [[ "" = "$(which ls)" ]]
+			if [ "" = "$(which ls)" ]
 			then	tui-echo "The project dir \"$prj_path\" is empty."
 				if tui-yesno "Does the project exist on $GIT_ID already?"
 				then	cd ..
@@ -136,8 +136,8 @@ Example Readme
 	
 	if $REQ_ADD || ! grep origin "$prj_path/.git/config"
 	then	#echo "$BROWSER -- $BROWSER_GUI -- $URL -- $URL2"
-		[[ ! -z "$URL2" ]] && $BROWSER_GUI "$URL2"
-		[[ ! -z "$URL" ]] && \
+		[ ! -z "$URL2" ] && $BROWSER_GUI "$URL2"
+		[ ! -z "$URL" ] && \
 		cat >> "$prj_path/.git/config" << EOF
 [remote "origin"]
 	url = $URL

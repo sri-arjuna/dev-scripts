@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.5
+	script_version=0.6
 #
 #	Title
 #
@@ -31,8 +31,8 @@
 #
 	#echo "1$1 2$2 3$3 4$4"
 	
-	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
-	then	if [[ -d "$DIR_CFG/$1" ]]
+	if [ -z "$4" ] # || [[ ! -z "$LBL" ]]
+	then	if [ -d "$DIR_CFG/$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
 			select LBL in $(cd "$DIR_CFG";ls);do break;done
@@ -51,7 +51,7 @@
 #
 	tui-title "Create new kickstart file"
 	
-	if [[ ! -f "$allConf" ]]
+	if [ ! -f "$allConf" ]
 	then	# The settings are not yet created
 		# Gather info
 		tui-echo "Which template to use?" "The 'user' one will also use the anaconda-ks from the installation (BETA)"
@@ -99,7 +99,7 @@
 	
 	# Create the file
 	cd "$prj_path"
-	if [[ -f "$prj_name.ks" ]]
+	if [ -f "$prj_name.ks" ]
 	then	if tui-yesno "File already exists, overwrite?"
 		then	[[ -z "$template" ]] && template=$template_dir/livecd.ks
 			source "$template" > "$prj_name.ks" 
@@ -111,7 +111,7 @@
 			"kickstart=\"$prj_path/$prj_name.ks\"" > "$thisConf"
 	
 	ARCH=32
-	if [[ $(uname -m) = x86_64 ]]
+	if [ $(uname -m) = x86_64 ]
 	then	tui-yesno "Default arch target 64bit?" && \
 		do32bit=false || do32bit=true
 		# This is only required for 64 bit systems
@@ -130,27 +130,28 @@
 	
 	
 	prj_release=$(tui-read "What is the default release version? ($rel):")
-	[[ -z "$prj_release" ]] && prj_release=$rel
+	[ -z "$prj_release" ] && prj_release=$rel
 	
 	
 	prj_label=$(tui-read "What is the FSLABEL? ($prj_name):" )
-	[[ -z "$prj_label" ]] && prj_label="${prj_name/ /_}"
+	[ -z "$prj_label" ] && prj_label="${prj_name/ /_}"
 	
 	prj_title=$(tui-read "What is the TITLE? ($prj_name):")
-	[[ -z "$prj_title" ]] && prj_title="${prj_name/_/ }"
+	[ -z "$prj_title" ] && prj_title="${prj_name/_/ }"
 	
 	prj_outpath=$(tui-read "What is the output directory? ($HOME):")
-	[[ -z "$prj_outpath" ]] && prj_outpath="$HOME"
+	[ -z "$prj_outpath" ] && prj_outpath="$HOME"
 	
 	prj_tempdird="/tmp/${prj_name}_$ARCH"
 	prj_tempdir=""
 	
 	prj_tempdir=$(tui-read "What is the temp directory? ($prj_tempdird):")
-	[[ -z "$(echo $prj_tempdir)" ]] && prj_tempdir="$prj_tempdird"
+	[ -z "$(echo $prj_tempdir)" ] && prj_tempdir="$prj_tempdird"
 	
 	bitstring=""
 	# "opts=$opt"
-	printf '%s\n'   "prj_release=\"$prj_release\"" \
+	printf '%s\n'   "# Git configuration for \"$prj_name\", created on $(date +%F %T)" \
+                        "prj_release=\"$prj_release\"" \
 			"prj_label=\"$prj_label\"" \
 			"prj_title=\"$prj_title\"" \
 			"prj_outpath=\"$prj_outpath\"" \

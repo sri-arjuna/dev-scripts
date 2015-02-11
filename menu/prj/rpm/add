@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -53,9 +53,10 @@
 	# TODO, use custom templates, according to remoteOnly?
 	specfile="$prj_path/$prj_name.spec"
 	rpmdev-newspec "$prj_name" > /dev/zero
-	[[ $? -gt 1 ]] && RET=1 || RET=$?
+	RET=$?
+        [[ $RET -eq 2 ]] && RET=0
 	tui-status $RET "Created specfile ($specfile)"
-	tui-conf-set "$tConf" specfile "\"\$prj_path/\$prj_name.spec\""
+	tui-conf-set "$tConf" specfile "\$prj_path/\$prj_name.spec"
 	source "$tConf"
 	
 	tui-echo "What is your default build target?"
@@ -97,13 +98,12 @@
 		echo "# Shared RPM configuration among all projects" > "$CONF_RPM"
 		tui-yesno "Do you have defined a custom builddir?" && \
 			tDir=$(tui-read "Please type the full path:") && \
-			tui-conf-set "$CONF_RPM" rpm_builddir "\"$tDir\"" || \
-			tui-conf-set "$CONF_RPM" rpm_builddir "\"\$HOME/rpmbuild\""
+			tui-conf-set "$CONF_RPM" rpm_builddir "$tDir" || \
+			tui-conf-set "$CONF_RPM" rpm_builddir "\$HOME/rpmbuild"
 	
 		tui-yesno "Clean builddir before each new build?" && \
 			tui-conf-set "$CONF_RPM" rpm_cleandir "true" || \
 			tui-conf-set "$CONF_RPM" rpm_cleandir "false"
-		
 	fi
 	
 	[[ ! -z "$specfile" ]] && \

@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -23,10 +23,10 @@
 	source /etc/tui/tui.conf
 	source /etc/os-release
 	source /etc/tui/apps.conf
-	[[ 0 -ne $UID ]] || \
+	[ 0 -ne $UID ] || \
 		source $HOME/.config/tui/apps.conf
 		
-	script_version=0.2
+	script_version=0.3
 #
 #	Title
 #
@@ -49,8 +49,8 @@
 	done
 	shift $(($OPTIND - 1))
 	
-	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
-	then	if [[ -d "$DIR_CFG/$1" ]]
+	if [ -z "$4" ] # || [[ ! -z "$LBL" ]]
+	then	if [ -d "$DIR_CFG/$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
 			select LBL in $(cd "$DIR_CFG";ls|$GREP -v \.);do break;done
@@ -60,5 +60,5 @@
 	
 	#source "$CONF_RPM"
 	source "$DIR_CFG/$LBL/$LBL.conf"
-	cp -f $CONF_MOCK "$DIR_CFG/$LBL/mock.conf"
-	tui-edit "$DIR_CFG/$LBL/mock.conf"
+	cp -f "$CONF_MOCK" "$DIR_CFG/$LBL/mock.conf"
+	tui-conf-editor "$DIR_CFG/$LBL/mock.conf"

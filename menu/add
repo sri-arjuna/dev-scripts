@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -26,16 +26,22 @@
 #
 #	Variables
 #
-	[[ -d "$DIR_PRJS" ]] || ds setup
+	#if [ ! -z "$DIR_PRJS" ] 
+	#then	[ -d "$DIR_PRJS" ] || ds setup
+        #else    ds setup
+        #        if tui-status $? "Setup completed"
+        #        then    tui-yesno "Restart using 
+	#fi
 	TITLE="$OA_TITLE - New Project"
 	script_version=0.3
 	LIST_Y=""
-	[[ -d "$DIR_CFG" ]] || mkdir -p "$DIR_CFG"
+	[ -d "$DIR_CFG" ] || mkdir -p "$DIR_CFG"
 	case "$2" in
-	"-h"|"--help")	printf "%s\n\n" "Usage: $0 LABEL [/path/to]PACKAGE-NAME" ; exit 0	;;
+	"-h"|"--help")	printf "\n%s\n\n" "Usage: $0 LABEL [/path/to/]PACKAGE-NAME" ; exit 0	;;
 	esac
-	[[ -z "$2" ]] && LBL="" || LBL="$2"
-	[[ -z "$3" ]] && PRJ="" || PRJ="$3"
+	#echo 1$1 2$2 3$3 4$4 5$5 6$6
+        [ -z "$1" ] && LBL="" || LBL="$1"
+	[ -z "$2" ] && PRJ="" || PRJ="$2"
 	#echo "1$1 2$2 3$3 4$4"
 	#[[ -z "$4" ]] && NAME="" || NAME="$4"
 	
@@ -43,23 +49,23 @@
 #	Action
 #
 	tui-title "$OA_TITLE - New Project ($script_version)"
-	if [[ -z "$PRJ" ]]
+	if [ -z "$PRJ" ]
 	then	tui-echo "Lets a create a new project, for this we need some information..."
 		if tui-yesno "Is it an existing project?"
-		then	select PRJ in $(cd "$DIR_PRJS";ls);do break;done
+		then	PRJ=$(tui-select $(cd "$DIR_PRJS";ls -1))
 			PRJ="$DIR_PRJS/$PRJ"
 		else	PRJ=$(tui-read "What is your new projects name:")
-			[[ -d "$DIR_PRJS/$PRJ" ]] || mkdir -p "$DIR_PRJS/$PRJ"
+			[ -d "$DIR_PRJS/$PRJ" ] || mkdir -p "$DIR_PRJS/$PRJ"
 		fi
 		NAME=$(basename "$PRJ")
-		[[ -z "$LBL" ]] && \
+		[ -z "$LBL" ] && \
 			LBL=$(tui-read "How will you refer to this project? (lbl)")
 	else	NAME=$(basename "$PRJ")
 		#set -x
-		[[ "." = "$(dirname $PRJ)" ]] && \
+		[ "." = "$(dirname $PRJ)" ] && \
 			PRJ="$DIR_PRJS/$PRJ"
 	fi
-	[[ "$PRJ" = "$NAME" ]] && \
+	[ "$PRJ" = "$NAME" ] && \
 		PRJ="$DIR_PRJS/$PRJ"
 	
 	thisConf="$DIR_CFG/$LBL/$LBL.conf"
@@ -67,31 +73,38 @@
 	tui-echo "Your quick access label is:"  "$LBL"
 	tui-echo "The location of your project is:" "$PRJ"
 	tui-echo "The project configuration is:" "$thisConf"
-	[[ -z "$PRJ" ]] && RET=1 || RET=0
-	tui-bol-dir "$DIR_CFG/$LBL"
-	tui-status  $RET "Created: $PRJ" || exit $RET
 	
+        [ ! -z "$PRJ" ] && \
+                tui-bol-dir "$PRJ"
+	tui-status $? "Created configuration: $PRJ" || exit $RET
+#echo "TESTING ----------------------------------------- TESTING"	
 	# Create the basic config file:
 	
 	echo "# Project configuration for \"$NAME\" ($LBL)" > "$thisConf"
-	tui-conf-set "$thisConf" prj_name "\"$NAME\""
-	tui-conf-set "$thisConf" prj_path "\"$PRJ\""
-
+	tui-conf-set "$thisConf" prj_name "$NAME"
+	#set -x
+        tui-conf-set "$thisConf" prj_path "$PRJ"
+        #set +x
+#echo "TESTING ----------------------------------------- TESTING"        
 	source "$thisConf"
-	[[ -d "$prj_path" ]] || mkdir -p "$prj_path"
-	
+#	[ -z "$prj_path" ] && \
+ #               tui-printf -S 1 "prj_path is empty" && \
+  #              cat "$thisConf" && \
+   #             echo $prj_path $PRJ && \
+    #            exit
+               
 	$hasFAS && \
 		tui-yesno "FAS was found, use for this project?" && \
 		tui-conf-set "$thisConf" useFAS "true" || \
 		tui-conf-set "$thisConf" useFAS "false"
 	
-	tui-yesno "Is this a remote only project?" && \
-		tui-conf-set "$thisConf" remoteOnly "true" || \
-		tui-conf-set "$thisConf" remoteOnly "false"
+	tui-yesno "Is this a single person / local (y) or a remote (n) project?" && \
+		tui-conf-set "$thisConf" remoteOnly "false" || \
+		tui-conf-set "$thisConf" remoteOnly "true"
 	
 	MODULES=""
 	tui-title "$OA_TITLE - Modules"
-	tui-echo "Please select which modules to this project apply."
+	tui-echo "Please select which modules apply to this project."
 	# Go to the project menu and read out the folders
 	cd "/usr/share/dev-scripts/menu/prj"
 	LIST=""
