@@ -1,0 +1,58 @@
+#!/bin/bash
+# ------------------------------------------------------------------------
+#
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+#
+# ------------------------------------------------------------------------
+#
+#	
+	. tui
+	. $HOME/.config/dev-scripts/dev-scripts.conf
+	. $HOME/.config/dev-scripts/rpm.conf
+	script_version=0.1
+#
+#	Title
+#
+	title="$OA_TITLE - RPM Handler - Unpack source package"
+	[ ! list = "$(basename $0)" ] && tui-title "$title ($script_version)"
+	oPWD="$PWD_OLD"
+#
+#	Variables
+#
+	declare -a TASK
+#	echo "1$1 2$2 3$3 4$4"
+	[ -z "$4" ] || shift 3
+	
+	if [ -z "$1" ] # || [[ ! -z "$LBL" ]]
+	then	list="$(ls *src.rpm)"
+                if [ -z "$list" ]
+                then    tui-echo "Please provide the full path to the package you want to unpack"
+                        TASK=$(tui-read "Path:")
+                else    [ ${#list[@]} -gt 1 ] && tui-echo "Please select the package to with:"
+                        TASK=$(tui-select -a $list)
+                fi
+	else	TASK=("${@}")
+	fi
+#
+#	Display
+#
+        for task in "${TASK[@]}"
+	do	tui-title "Unpacking: $task"
+                #$(dirname $task)
+                rpm2cpio "$task" | cpio -idmv
+	done
+	cd "$oPWD"
