@@ -23,7 +23,7 @@
 	. tui
 	. $HOME/.config/dev-scripts/dev-scripts.conf
 	. $HOME/.config/dev-scripts/rpm.conf
-	script_version=0.4
+	script_version=0.4.2
 #
 #	Title
 #
@@ -75,10 +75,10 @@
 #	Display
 #
 	#set -x
-	
-	
-	#echo "$rpm_builddir" ; exit
-	
+	[ -d "$(dirname $OF)" ] || mkdir -p "$(dirname $OF)"
+	[ -f "$OF" ] && rm -f "$OF"
+	touch "$OF"
+
 	for task in $TASK
 	do	case $task in
 		rpm)
@@ -100,9 +100,6 @@
 			
 			if [ ! -z "$OF" ]
 			then	# This works
-				[ -d "$(dirname $OF)" ] || mkdir -p "$(dirname $OF)"
-				[ -f "$OF" ] && rm -f "$OF"
-				touch "$OF"
 				newlist=""
 				for l in $list;do
 					newlist+=" ${l/./$rpm_builddir}\n"
@@ -125,18 +122,15 @@
 			cd /var/lib/mock
 			
 			if tui-bol-sudo
-			then	list=$(sudo find |$GREP result|$GREP "$prj_name"|$GREP \\.rpm$ 2>/dev/zero) 2>/dev/zero
-			else	list=$(su -c "find |$GREP result|$GREP $prj_name|$GREP \\.rpm\$ 2>/dev/zero") 2>/dev/zero
+			then	list=$(sudo find |$GREP result|$GREP "$prj_name"|$GREP src\\.\\.rpm$ 2>/dev/zero) 2>/dev/zero
+			else	list=$(su -c "find |$GREP result|$GREP $prj_name|$GREP src\\.\\.rpm\$ 2>/dev/zero") 2>/dev/zero
 			fi
 			
 			if [ ! -z "$OF" ]
 			then	# This works
-				[ -d "$(dirname $OF)" ] || mkdir -p "$(dirname $OF)"
-				[ -f "$OF" ] && rm -f "$OF"
-				touch "$OF"
 				newlist=""
 				for l in $list;do
-					newlist+=" ${l/./var/lib/mock}\n"
+					newlist+=" ${l/./\/var\/lib\/mock}" #\n"
 				done
 				printf "$newlist" > "$OF"
 			else	# But here is no output

@@ -1,5 +1,5 @@
 Name:        dev-scripts
-Version:     0.3.4
+Version:     0.3.5
 Release:     0%{?dist}
 Summary:     A collection of scripts for developers
 
@@ -34,6 +34,8 @@ A collection of scripts that aims to make a developers life easier
 * rpm
 * repo
 * compile
+* mock
+* livecd-creator
 * git
 
 
@@ -78,9 +80,12 @@ rm -rf %{buildroot}
 %{_bindir}/ds
 
 
-
 %changelog
-* Wed Feb 01 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.4
+* Sun Feb 15 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.5
+- Updated:    ds prj <ks,mock,rpm> make
+- Updated:    ds prj rpm list
+
+* Wed Feb 11 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.4
 - Updated:    ds prj <git,ks,mock,rpm> add
 - Updated:    ds prj rpm list
 - Added:      ds prj rpm unpack

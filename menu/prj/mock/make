@@ -27,7 +27,7 @@
 	source /etc/tui/apps.conf #|| \
 	[[ 0 -ne $UID ]] || \
 		source $HOME/.config/tui/apps.conf
-	script_version=0.7.7
+	script_version=0.7.8
 	TOTAL_RET=0
 	TOTAL_COUNT=0
 	TOTAL_SKIP=0
@@ -50,6 +50,7 @@
 	do 	case $opts in
 		v)	beVerbose=true
 			NONVERBOSE=""
+			optVerb="-v"
 			;;
 		s)	dummy=$opts	;;
 		esac
@@ -76,18 +77,22 @@
 	source "$DIR_CFG/$LBL/mock.conf"
 	touch "$TUI_TEMP_FILE"
 	OPTS="-$opt"
-	if [[ -z "$specfile" ]]
+	tui-log -e "$LOG" ""
+	tui-log -t "$LOG" "Loaded project: $prj_name ($LBL)"
+	if [ -z "$specfile" ]
 	then	specfile="$prj_path/$prj_name.spec"
-		[[ -f "$specfile" ]] || specfile=$(tui-read "Please type the full path to the specfile:")
+		[ -f "$specfile" ] || specfile=$(tui-read "Please type the full path to the specfile:")
 		
 		# Save for later use
-		if [[ -f "$specfile" ]]
+		if [ -f "$specfile" ]
 		then	tui-conf-set "$DIR_CFG/$LBL/rpm.conf" specfile "$specfile"
 		else	tui-status 1 "Cant work without a specfile!"
 			exit $?
 		fi
+		tui-log $optVerb -t "$LOG" "Found specfile in $specfile"
 	fi
 	VER=$($GREP Version "$specfile"|$AWK '{print $2}')
+	tui-log $optVerb -t "$LOG" "Specfile-Version: $VER"
 #
 #	hasSudo ?
 #
@@ -116,26 +121,31 @@
 #
 	# Was built by 'rpm'
 	# now looking for the latest...
-	[[ -z $TUI_TEMP_DIR ]] && exit 1
+	[ -z "$TUI_TEMP_DIR" ] && exit 1
 	cd $dir_out && \
 		list=$prj_name*$VER*.src.rpm && \
-		for l in $list;do s=$l;done && \
-		SRC=$dir_out/$s 
+		for l in $list;do s="$l";done && \
+		SRC="$dir_out/$s"
+	tui-log $optVerb -t "$LOG" "Generated source rpm list (${#LIST[@]})"
+	tui-log -t "$LOG" "list=$list"
+	tui-log $optVerb -t "$LOG" "Using this source package: $SRC"
 #
 #	Mock builds all archs
 #
 	# Prepare tasks
 	TASKS=""
 	CHECK=0
-	touch $LOG_MOCK
-	umask 022 $LOG_MOCK
+	touch "$LOG_MOCK"
+	umask 022 "$LOG_MOCK"
 	for dist in $DISTROS;do
 		for R in $RELEASES;do
 			for A in $ARCHS;do
 				T="$dist-$R-$A"
-				if [[ -f "/etc/mock/$T.cfg" ]]
+				if [ -f "/etc/mock/$T.cfg" ]
 				then	TASKS+=" $prj_name-$T"
 					echo "mock --target=$A -r $T $SRC 1>>$LOG_MOCK 2>>$LOG_MOCK " > "$TUI_TEMP_DIR/$prj_name-$T"
+					echo "[ 0 -eq \$? ] && msg=\"Successfully built\" || msg=\"Failed to build\"" >> "$TUI_TEMP_DIR/$prj_name-$T"
+					echo "tui-log -t \"$LOG\" \"\$msg $prj_name-$T\"" >> "$TUI_TEMP_DIR/$prj_name-$T"
 					CHECK=$(($CHECK + 1))
 				else	tui-status 4 "Configuration for task \"$T\" does not exist."
 					TOTAL_SKIP=$(( $TOTAL_SKIP + 1 ))
@@ -143,7 +153,7 @@
 			done
 		done
 	done
-	TASKS=$(echo $TASKS)
+	#TASKS=$(echo $TASKS)
 
 	cd "$prj_path"
 	if $hasSudo
@@ -151,12 +161,16 @@
 		for T in $TASKS;do
 			echo "" >> $LOG_MOCK
 			cat "$TUI_TEMP_DIR/$T" >> $LOG_MOCK
+			tui-log -t "$LOG" "Start building package for $T"
 			sudo tui-bgjob "$TUI_TEMP_DIR/$T" "Packaging $T" "Packaged $T" && \
-				rm "$TUI_TEMP_DIR/$T" #&& RET=$(($RET + 1))
+				rm "$TUI_TEMP_DIR/$T" && RET=$(($RET + 1))
 			RET=$?
 			# 
-			[[ 0 -ne $RET ]] && \
-				TOTAL_RET=$(( $TOTAL_RET + 1 ))
+			[ 0 -ne $RET ] && \
+				TOTAL_RET=$(( $TOTAL_RET + 1 )) && \
+					msg="Successfully built" || \
+					msg="Failed to build"
+			tui-log $optVerb -t "$LOG" "$msg: $prj_name-$T"
 			
 			TOTAL_COUNT=$(( $TOTAL_COUNT + 1 ))
 		done
@@ -180,16 +194,19 @@ EOF
 #	Moving files
 #
 	cd /var/lib/mock
+	tui-log $optVerb -t "$LOG" "Changed from $OLDPWD to $PWD"
 	tui-echo
 	#tui-echo "Moving files??"
 	
 	tui-bol-sudo && \
 		list=$(sudo find| $GREP  [64h]"\\."rpm$|grep -v debug) || \
 		(tui-echo "Please provide root password to move files to:" "$dir_out";su -c "list=$(find| $GREP  \[64h\]\\\\.rpm\\$|$GREP -v debug);export list")
-		# OLD
+	tui-log $optVerb -t "$LOG" "Generated list of files to move"
+	# OLD
 		# result|grep -v debug |grep [46h]"\.rpm" 2>/dev/zero )  2>/dev/zero
-	if [[ ! -z "$list" ]]
+	if [ ! -z "$list" ]
 	then	# list variable is NOT empty
+		tui-log -t "$LOG" "$list"
 		tui-bol-sudo && \
 			( sudo chown -R $USER:$USER $list ; RET=$? ; export RET ) || \
 			( tui-echo "Please provide root password to chown the packages for $USER" ; usr="$USER" ; export usr list ; su -c "chown -R $usr:$usr $list ; RET=\$?;export RET" )
@@ -199,7 +216,7 @@ EOF
 		LIST=""
 		for l in $list;do
 			echo "$LIST" | grep -q "$l" || \
-				LIST+="\n$l"
+				LIST+=" $l"
 		done
 		
 		tui-echo
@@ -208,8 +225,12 @@ EOF
 			tui-printf -rS 2 " * Moving: $(basename $F)"
 			#mv -f "$F" "$dir_out"
 			cp "$F" "$dir_out"
-			tui-status $? " * Moved: $(basename $F)"
+			tui-status $? " * Moved: $(basename $F)" && \
+				msg="Successfully moved" || \
+				msg="Failed to move"
+			tui-log $optVerb -t "$LOG" "$msg $(basename $F)"
 		done
+	else	tui-log -t "$LOG" "List is empty / Nothing found"
 	fi
 #
 #	Check return value
@@ -217,10 +238,12 @@ EOF
 	#tui-echo "Options available:" "$CHECK"
 	#tui-echo "Configurations skipped:" "$(( $CHECK - $TOTAL_COUNT ))"
 	tui-echo
-	tui-echo "There where $CHECK configuration files found and $TOTAL_SKIP entries were skipped."
+	msg="There where $CHECK configuration files found and $TOTAL_SKIP entries were skipped."
+	tui-log -v -t "$LOG" "$msg"
 	
-	if [[ $TOTAL_RET -ne 0 ]] #tui-status $RET "Made all packages of: $prj_name"
-	then	tui-echo "Sadly, a total of $TOTAL_RET packages failed."
+	if [ $TOTAL_RET -ne 0 ] #tui-status $RET "Made all packages of: $prj_name"
+	then	tui-log -v -t "$LOG" "Sadly, a total of $TOTAL_RET packages failed."
+		tui-log -e "$LOG" ""
 		tui-yesno "View logfile?" && tui-edit "$LOG_MOCK"
 		#exit 1
 	#else	tui-status $TOTAL_RET ""
