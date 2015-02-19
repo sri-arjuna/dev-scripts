@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -20,11 +20,18 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.2
+	script_version=0.3
 #
 #	Title
 #
-	[[ -z "$4" ]] && LBL="" || LBL="$4"
+	if [ -z "$4" ]
+	then	if [ -d "$DIR_CFG/$1" ]
+		then	LBL="$1"
+		else	tui-echo "Please select the label to work with:"
+			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
+		fi
+	else	LBL="$4"
+	fi
 	title="$OA_TITLE - GIT Handler - Status"
 	tui-title "$title ($script_version)"
 	[[ -f "$CONF_GIT" ]] || \
@@ -34,18 +41,18 @@
 #
 #	Variables
 #
-	if [[ -z "$LBL" ]]
+	if [ -z "$LBL" ]
 	then	tui-echo "Please select a project to make:"
 		select LBL in $(cd "$DIR_CFG";ls);do break;done
 		tui-status $? "Selected: $LBL" || exit $?
 	fi
-	[[ -f "$CONF_GIT" ]] && source "$CONF_GIT"
+	[ -f "$CONF_GIT" ] && source "$CONF_GIT"
 	source "$DIR_CFG/$LBL/$LBL.conf"
 	if $remoteOnly
 	then	tui-status 1 "Project \"$prj_name\" is remote only!"
 		exit 1
 	fi
-	if [[ -f "$DIR_CFG/$LBL/git.conf" ]] 
+	if [ -f "$DIR_CFG/$LBL/git.conf" ] 
 	then	source "$DIR_CFG/$LBL/git.conf"
 	else	tui-status 1 "This project has no git config!"
 		exit 1

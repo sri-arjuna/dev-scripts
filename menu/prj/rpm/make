@@ -202,9 +202,9 @@
 	
 	if $remoteOnly
 	then	# Just parse the source file
-		echo cp "$(cat $TMP)" "$DEST" || exit 1
-		tui-log $optVerb -t "$LOG" "Start parsing: $TMP"
 		set -x
+		cp "$(cat $TMP)" "$DEST" || exit 1
+		tui-log $optVerb -t "$LOG" "Start parsing: $TMP"
 		for line in $(grep "src.rpm" "$TMP");do
 			if [ ! -z "$line" ]
 			then	[ ! "/" = "${line:0:1}" ] && line="/$line"

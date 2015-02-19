@@ -34,9 +34,9 @@
 #	Variables
 #
 	OF=""
-#	echo "1$1 2$2 3$3 4$4"
+#	echo "prj1$1 rpm2$2 list3$3 lbl4$4"
 	[ -z "$4" ] || shift 3
-	
+	#set -x
 	if [ -z "$1" ] # || [[ ! -z "$LBL" ]]
 	then	tui-echo "Please select the label to work with:"
 		LBL=$(tui-select $(cd "$DIR_CFG";ls))
@@ -45,6 +45,8 @@
 			OF="$2"
 		fi
 	fi
+	#set +x
+	
 	if [ ! -z "$OF" ]
 	then	# Its not empty
 		#set -x
@@ -52,6 +54,10 @@
 		b=$(basename "$OF")
 		[ "$d" = "$b" ] && OF="$oPWD/$OF"
 		[ "." = "$d" ] && OF="$oPWD/$OF"
+		
+		[ -d "$(dirname $OF)" ] || mkdir -p "$(dirname $OF)"
+		[ -f "$OF" ] && rm -f "$OF"
+		touch "$OF"
 		#set +x
 	fi
 	
@@ -75,10 +81,6 @@
 #	Display
 #
 	#set -x
-	[ -d "$(dirname $OF)" ] || mkdir -p "$(dirname $OF)"
-	[ -f "$OF" ] && rm -f "$OF"
-	touch "$OF"
-
 	for task in $TASK
 	do	case $task in
 		rpm)
@@ -92,8 +94,8 @@
 			
 			#set -x
 			if tui-bol-sudo
-			then	list=$(sudo find |$GREP "$prj_name"|$GREP \.rpm$ 2>/dev/zero) #2>/dev/zero
-			else	list=$(su -c "find |$GREP $prj_name|$GREP \\.rpm\$ 2>/dev/zero") 2>/dev/zero
+			then	list=$(sudo find |$GREP "$prj_name"|$GREP \.rpm 2>/dev/zero) #2>/dev/zero
+			else	list=$(su -c "find |$GREP $prj_name|$GREP \.rpm 2>/dev/zero") 2>/dev/zero
 			fi
 			
 			
@@ -104,10 +106,10 @@
 				for l in $list;do
 					newlist+=" ${l/./$rpm_builddir}\n"
 				done
-				printf "$newlist" > "$OF"
+				printf "$newlist" >> "$OF"
 			else	# But here is no output
 				tui-title "$title ($task)"
-				if [[ -z "$list" ]]
+				if [ -z "$list" ]
 				then	tui-status 1 "No packages for \"$prj_name\" found..."
 				else	tui-list -n "$list"
 				fi
@@ -122,17 +124,18 @@
 			cd /var/lib/mock
 			
 			if tui-bol-sudo
-			then	list=$(sudo find |$GREP result|$GREP "$prj_name"|$GREP src\\.\\.rpm$ 2>/dev/zero) 2>/dev/zero
-			else	list=$(su -c "find |$GREP result|$GREP $prj_name|$GREP src\\.\\.rpm\$ 2>/dev/zero") 2>/dev/zero
+			then	list=$(sudo find |$GREP result|$GREP "$prj_name"|$GREP \.rpm 2>/dev/zero) #2>/dev/zero
+			else	list=$(su -c "find |$GREP result|$GREP $prj_name|$GREP \.rpm\$ 2>/dev/zero") 2>/dev/zero
 			fi
 			
 			if [ ! -z "$OF" ]
 			then	# This works
 				newlist=""
+				varlibmock=/var/lib/mock
 				for l in $list;do
-					newlist+=" ${l/./\/var\/lib\/mock}" #\n"
+					newlist+=" ${l/./$varlibmock}" #\n"
 				done
-				printf "$newlist" > "$OF"
+				printf "$newlist" >> "$OF"
 			else	# But here is no output
 				tui-title "$title ($task)"
 				if [ -z "$list" ]
@@ -145,4 +148,5 @@
 			;;
 		esac
 	done
+	#set +x
 	cd "$oPWD"

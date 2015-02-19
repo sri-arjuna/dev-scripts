@@ -25,7 +25,7 @@
 	source /etc/tui/commands.conf
 	source /etc/os-release
 	source /etc/tui/apps.conf #|| \
-	[[ 0 -ne $UID ]] || \
+	[ 0 -ne $UID ] || \
 		source $HOME/.config/tui/apps.conf
 	script_version=0.7.8
 	TOTAL_RET=0
@@ -57,7 +57,7 @@
 	done
 	shift $(($OPTIND - 1))
 	
-	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
+	if [ -z "$4" ] # || [[ ! -z "$LBL" ]]
 	then	if [[ -d "$DIR_CFG/$1" ]]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
@@ -68,7 +68,7 @@
 	
 	source "$CONF_RPM"
 	source "$DIR_CFG/$LBL/$LBL.conf"
-	if [[ -f "$DIR_CFG/$LBL/rpm.conf" ]]
+	if [ -f "$DIR_CFG/$LBL/rpm.conf" ]
 	then	source "$DIR_CFG/$LBL/rpm.conf"
 	else	tui-status 1 "Mock requires a specfile"
 		exit 1
@@ -107,7 +107,7 @@
 		dir_out="$FAS_REVIEW/$prj_name"
 		specfile=$dir_out/$prj_name.spec
 		tarball=$dir_out/$prj_name-$VER.$TAR_ET
-	else	[[ -z "$DIR_OUT" ]] && \
+	else	[ -z "$DIR_OUT" ] && \
 			dir_out="$HOME/data/out/$dist" && \
 			tui-conf-set \
 				$HOME/.config/dev-scripts/dev-scripts.conf \
@@ -122,8 +122,8 @@
 	# Was built by 'rpm'
 	# now looking for the latest...
 	[ -z "$TUI_TEMP_DIR" ] && exit 1
-	cd $dir_out && \
-		list=$prj_name*$VER*.src.rpm && \
+	cd "$dir_out" && \
+		list=$(find | $GREP -e $prj_name -e $VER | $GREP \.src\.rpm$) && \
 		for l in $list;do s="$l";done && \
 		SRC="$dir_out/$s"
 	tui-log $optVerb -t "$LOG" "Generated source rpm list (${#LIST[@]})"
@@ -144,8 +144,8 @@
 				if [ -f "/etc/mock/$T.cfg" ]
 				then	TASKS+=" $prj_name-$T"
 					echo "mock --target=$A -r $T $SRC 1>>$LOG_MOCK 2>>$LOG_MOCK " > "$TUI_TEMP_DIR/$prj_name-$T"
-					echo "[ 0 -eq \$? ] && msg=\"Successfully built\" || msg=\"Failed to build\"" >> "$TUI_TEMP_DIR/$prj_name-$T"
-					echo "tui-log -t \"$LOG\" \"\$msg $prj_name-$T\"" >> "$TUI_TEMP_DIR/$prj_name-$T"
+					#echo "[ 0 -eq \$? ] && msg=\"Successfully built\" || msg=\"Failed to build\"" >> "$TUI_TEMP_DIR/$prj_name-$T"
+					#echo "tui-log -t \"$LOG\" \"\$msg $prj_name-$T\"" >> "$TUI_TEMP_DIR/$prj_name-$T"
 					CHECK=$(($CHECK + 1))
 				else	tui-status 4 "Configuration for task \"$T\" does not exist."
 					TOTAL_SKIP=$(( $TOTAL_SKIP + 1 ))
@@ -179,7 +179,7 @@
 for T in $TASKS;do
 	cat $TUI_TEMP_DIR/\$T >> $LOG_MOCK
 	tui-bgjob "\$TUI_TEMP_DIR/\$T" "Packaging \$T" "Packaged \$T" && rm $TUI_TEMP_DIR/\$T
-	[[ 0 -ne \$? ]] && \\
+	[ 0 -ne \$? ] && \\
 			TOTAL_RET=$(( \$TOTAL_RET + 1 )) && \\
 			tui-filemgr /var/lib/mock/\$T/result
 	TOTAL_COUNT=$(( \$TOTAL_COUNT + 1 ))
@@ -224,7 +224,7 @@ EOF
 		for F in $LIST;do
 			tui-printf -rS 2 " * Moving: $(basename $F)"
 			#mv -f "$F" "$dir_out"
-			cp "$F" "$dir_out"
+			mv "$F" "$dir_out"
 			tui-status $? " * Moved: $(basename $F)" && \
 				msg="Successfully moved" || \
 				msg="Failed to move"
@@ -249,5 +249,5 @@ EOF
 	#else	tui-status $TOTAL_RET ""
 	fi
 	
-	[[ $TOTAL_RET -gt 0 ]] && RET=1  || RET=0
+	[ $TOTAL_RET -gt 0 ] && RET=1  || RET=0
 	exit $RET

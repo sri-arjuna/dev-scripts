@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -20,20 +20,23 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.1
+	. $HOME/.config/dev-scripts/dev-scripts.conf
+	. /usr/share/dev-scripts/*
+	
+	script_version=0.2
 #
 #	Title
 #
 	title="$OA_TITLE - GIT Handler - Upload repositry"
 	tui-title "$title ($script_version)"
-	[[ -f "$CONF_GIT" ]] || \
+	[ -f "$CONF_GIT" ] || \
 		(tui-wait 5s "Please take care to provide all required data...";ds setup)
 	source "$CONF_GIT" || exit 1
 #
 #	Variables
 #
-	if [[ -z "$4" ]]
-	then	if [[ -d "$DIR_CFG/$1" ]]
+	if [ -z "$4" ]
+	then	if [ -d "$DIR_CFG/$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
 			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
@@ -41,15 +44,49 @@
 	else	LBL="$4"
 	fi
 	source "$DIR_CFG/$LBL/$LBL.conf"
+	tui-status $? "Selected project $prj_name ($LBL)"
 #
 #	Display & Action
 #
 	cd "$prj_path"
-	if [[ "" = "$(git status|grep -e del -e del)" ]]
-	then	git push origin master
+	LC_ALL=C ; export LC_ALL
+	
+	# Generate parsing string, and prepare parsing toggle
+	git_status="$(git status)"
+	mode=fail
+	
+	# Find reasons to make it pass
+	# Or should it be, find reasons to make it fail???
+	case "$git_status" in
+	*ahead*)	mode=pass	;;
+	esac
+	
+	# Add files? Delete leftovers? Commit changes? 
+	if [ fail = "$mode" ]
+	then	tui-status 1 "There are things to do..."
+		git status
+		tui-yesno "Handle with dev-scripts?" && \
+			ds prj git status $LBL || \
+			exit $?
+	fi
+	
+	tui-echo "Uploading data for $prj_name"
+	git push origin master
+	tui-status $? "Uploaded code of $prj_name"
+	ret=$?
+	cd "$oPWD"
+	exit $ret
+
+exit 0
+	if [ ! "" = "$(git status|grep ahead )" ]
+	then	tui-echo "Uploading data for $prj_name"
+		git push origin master
+		tui-status $? "Uploaded code of $prj_name"
 		cd "$oPWD"
 		exit $?
 	else	tui-status $? "There are uncommited changes"
 		git status
+		tui-yesno "Handle with dev-scripts?" && \
+			ds prj git status $LBL
 		exit $?
 	fi

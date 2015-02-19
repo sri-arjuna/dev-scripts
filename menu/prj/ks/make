@@ -55,8 +55,8 @@
 	done
 	shift $(($OPTIND - 1))
 	
-	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
-	then	if [[ -d "$DIR_CFG/$1" ]]
+	if [ -z "$4" ] # || [[ ! -z "$LBL" ]]
+	then	if [ -d "$DIR_CFG/$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
 			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
@@ -68,10 +68,10 @@
 	source "$DIR_CFG/$LBL/livecd.conf"
 
 	# Exit if no kickstart file was found
-	[[ -f "$kickstart" ]] ; tui-status $? "$kickstart exists" || exit 1
+	[ -f "$kickstart" ] ; tui-status $? "$kickstart exists" || exit 1
 #set -x	
 	# Create STRING according to ARCH
-	[[ -z "$arch_style" ]] && \
+	[ -z "$arch_style" ] && \
 		arch_style=kernel && \
 		tui-conf-set "$DIR_CFG/$LBL/livecd.conf" arch_style $arch_style
 	
@@ -96,7 +96,7 @@
 	case $arch_style in
 	number)		ARCH=${ARCH}bit	;;
 	kernel)		str="$(uname -r)"
-			if [[ x86_64 -eq $(uname -m) ]] && $do32bit
+			if [ x86_64 -eq $(uname -m) ] && $do32bit
 			then	str=${str/$(uname -m)/i686}
 			fi
 			# Remove fc$RELEASEVER
@@ -109,7 +109,7 @@
 	prj_title+=" (${ARCH})"
 	
 	# Generate the tempdir string
-	[[ -z "$prj_tempdir" ]] && \
+	[ -z "$prj_tempdir" ] && \
 		prj_tempdir="/mnt/tmp/${prj_label}"
 	cmd_tmpdir="--tmpdir=\"$prj_tempdir/$prj_label\""
 	
@@ -152,7 +152,7 @@
 #set -x	
 	if [ 0 -eq $RET ]
 	then	# Its already been chown'ed
-		tui-bol-dir "$prj_outpath/" && \
+		tui-bol-dir "$prj_outpath/" 1>/dev/zero && \
 			msg="$prj_outpath exists." || \
 			msg="$prj_outpath does NOT exist."
 		tui-log $optVerb -t "$LOG""$msg"
