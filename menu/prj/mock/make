@@ -126,9 +126,9 @@
 		list=$(find | $GREP -e $prj_name -e $VER | $GREP \.src\.rpm$) && \
 		for l in $list;do s="$l";done && \
 		SRC="$dir_out/$s"
-	tui-log $optVerb -t "$LOG" "Generated source rpm list (${#LIST[@]})"
+	tui-log $optVerb -t "$LOG" "Generated source rpm list (${#list[@]})"
 	tui-log -t "$LOG" "list=$list"
-	tui-log $optVerb -t "$LOG" "Using this source package: $SRC"
+	tui-log -vt "$LOG" "Start builds using: $SRC"
 #
 #	Mock builds all archs
 #

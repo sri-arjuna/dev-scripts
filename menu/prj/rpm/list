@@ -23,7 +23,8 @@
 	. tui
 	. $HOME/.config/dev-scripts/dev-scripts.conf
 	. $HOME/.config/dev-scripts/rpm.conf
-	script_version=0.4.2
+	. /usr/share/dev-scripts/incl/*
+	script_version=0.5
 #
 #	Title
 #
@@ -36,7 +37,28 @@
 	OF=""
 #	echo "prj1$1 rpm2$2 list3$3 lbl4$4"
 	[ -z "$4" ] || shift 3
-	#set -x
+	listMock=false
+	listSource=false
+	str_source=""
+	ME=list
+	
+	while getopts hmMs opt
+	do 	case $opt in
+		h)	echo "Usage: ds prj rpm list [-mMs] [LBL]"
+			exit 99
+			;;
+		m)	listMock=true
+			;;
+		M)	listMock=true
+			onlyMock=true
+			;;
+		s)	listSource=true
+			str_source="| $GREP \\.src\\."
+			;;
+		esac
+	done
+	shift $(($OPTIND - 1))
+	
 	if [ -z "$1" ] # || [[ ! -z "$LBL" ]]
 	then	tui-echo "Please select the label to work with:"
 		LBL=$(tui-select $(cd "$DIR_CFG";ls))
@@ -75,8 +97,15 @@
 	then	source "$MOCK"
 		source "$CONF_MOCK"
 		source "$DIR_CFG/../mock.conf"
-		TASK+=" mock"
 	fi
+	# Replace task if listMock is 'true' and project contains a mock module
+	if $listMock
+	then	if [ -f "$MOCK" ]
+		then	$onlyMock && \
+				TASK="mock" || \
+				TASK+=" mock"
+		fi
+	fi	
 #
 #	Display
 #
@@ -90,12 +119,27 @@
 					exit $?
 				fi
 			fi
-			cd "$rpm_builddir"
 			
-			#set -x
+			cd "$rpm_builddir"
 			if tui-bol-sudo
-			then	list=$(sudo find |$GREP "$prj_name"|$GREP \.rpm 2>/dev/zero) #2>/dev/zero
-			else	list=$(su -c "find |$GREP $prj_name|$GREP \.rpm 2>/dev/zero") 2>/dev/zero
+			then	$listSource && \
+					list=$(sudo find |$GREP "$prj_name"|$GREP \.rpm | $GREP \\.src\\. 2>/dev/zero) || \
+					list=$(sudo find |$GREP "$prj_name"|$GREP \.rpm  2>/dev/zero)
+				if [ -z "$list" ] 
+				then	cd "$DIR_OUT"
+					$listSource && \
+						list=$(sudo find |$GREP "$prj_name"|$GREP \.rpm | $GREP \.src\. 2>/dev/zero) || \
+						list=$(sudo find |$GREP "$prj_name"|$GREP \.rpm  2>/dev/zero)
+				fi
+			else	$listSource && \
+					list=$(su -c "find |$GREP $prj_name|$GREP \.rpm | $GREP \\.src\\. 2>/dev/zero") 2>/dev/zero || \
+					list=$(su -c "find |$GREP $prj_name|$GREP \.rpm 2>/dev/zero") 2>/dev/zero
+				if [ -z "$list" ] 
+				then	cd "$DIR_OUT"
+					$listSource && \
+						list=$(su -c "find |$GREP $prj_name|$GREP | $GREP \\.src\\. \.rpm 2>/dev/zero") 2>/dev/zero || \
+						list=$(su -c "find |$GREP $prj_name|$GREP \.rpm 2>/dev/zero") 2>/dev/zero
+				fi
 			fi
 			
 			
@@ -106,12 +150,12 @@
 				for l in $list;do
 					newlist+=" ${l/./$rpm_builddir}\n"
 				done
-				printf "$newlist" >> "$OF"
+				printf "$newlist" | sort -uV >> "$OF"
 			else	# But here is no output
 				tui-title "$title ($task)"
 				if [ -z "$list" ]
 				then	tui-status 1 "No packages for \"$prj_name\" found..."
-				else	tui-list -n "$list"
+				else	tui-list -n $list
 				fi
 				#find $rpm_builddir|$GREP $prj_name|$GREP rpm$
 			fi
@@ -124,8 +168,12 @@
 			cd /var/lib/mock
 			
 			if tui-bol-sudo
-			then	list=$(sudo find |$GREP result|$GREP "$prj_name"|$GREP \.rpm 2>/dev/zero) #2>/dev/zero
-			else	list=$(su -c "find |$GREP result|$GREP $prj_name|$GREP \.rpm\$ 2>/dev/zero") 2>/dev/zero
+			then	$listSource && \
+					list=$(sudo find |$GREP result|$GREP "$prj_name"|$GREP \.rpm | $GREP \\.src\\. 2>/dev/zero) || \
+					list=$(sudo find |$GREP result|$GREP "$prj_name"|$GREP \.rpm  2>/dev/zero)
+			else	$listSource && \
+					list=$(su -c "find |$GREP $prj_name|$GREP result|$GREP \.rpm | $GREP \\.src\\. 2>/dev/zero") 2>/dev/zero || \
+					list=$(su -c "find |$GREP $prj_name|$GREP result|$GREP \.rpm 2>/dev/zero") 2>/dev/zero
 			fi
 			
 			if [ ! -z "$OF" ]
@@ -135,13 +183,13 @@
 				for l in $list;do
 					newlist+=" ${l/./$varlibmock}" #\n"
 				done
-				printf "$newlist" >> "$OF"
+				printf "$newlist" | sort -uV >> "$OF"
 			else	# But here is no output
 				tui-title "$title ($task)"
 				if [ -z "$list" ]
 				then	tui-status 1 "No packages for \"$prj_name\" found..." #> /dev/zero
 				else	#echo "$list"|while read line;do tui-echo "${line:2}";done
-					tui-list -n "$list"
+					tui-list -n $list
 				fi
 				#find $rpm_builddir|$GREP $prj_name|$GREP rpm$
 			fi

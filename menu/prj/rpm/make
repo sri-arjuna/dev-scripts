@@ -168,7 +168,7 @@
 	cd "$prj_path"
 	tui-log $optVerb -t "$LOG" "Changed from $OLDPWD to $PWD"
 	if $beVerbose
-	then	tui-log $optVerb -t "$LOG" "Start building verbose: rpmbuild $OPTS \"$specfile\""
+	then	tui-log -vt "$LOG" "Start building verbose: rpmbuild $OPTS \"$specfile\""
 		rpmbuild $OPTS "$specfile"
 		RET=$?
 	else	touch "$TUI_TEMP_FILE"
@@ -198,12 +198,16 @@
 	tui-bol-dir "$TUI_TEMP_DIR" > /dev/zero
 	touch "$TMP"
 	/usr/share/dev-scripts/menu/prj/rpm/list $LBL "$TMP"
+	#ds prj rpm list $LBL "$TMP"
 	echo "" >> "$TMP"
 	
 	if $remoteOnly
-	then	# Just parse the source file
-		set -x
-		cp "$(cat $TMP)" "$DEST" || exit 1
+	then	/usr/share/dev-scripts/menu/prj/rpm/list -s $LBL "$TMP"
+		#ds prj rpm list $LBL "$TMP"
+		# Just parse the source file
+		cd $rpm_builddir
+		. /etc/os-release
+		cp "$(find|$GREP \.src\.rpm$ |$GREP fc$VERSION_ID)" "$DEST" || exit 1
 		tui-log $optVerb -t "$LOG" "Start parsing: $TMP"
 		for line in $(grep "src.rpm" "$TMP");do
 			if [ ! -z "$line" ]
@@ -216,11 +220,14 @@
 				tui-status $? "* Copied" "$lf" 
 				tui-log -t "$LOG" "$msg $DEST/$lf"
 			fi
-		done #<"$TMP" #|$GREP "src.rpm"
-		set +x
+		done 
+		cd "$OLDPWD"
 		tui-log $optVerb -t "$LOG" "End parsing: $TMP"
-	else	# Copy all the files
-		for line in $(cat "$TMP");do
+	else	/usr/share/dev-scripts/menu/prj/rpm/list $LBL "$TMP"
+		#ds prj rpm list $LBL "$TMP"
+		echo "" >> "$TMP"
+		# Copy all the files
+		while read line;do ## for line in $(cat "$TMP");do
 			if [ ! -z "$line" ]
 			then	[ ! "/" = "${line:0:1}" ] && line="/$line"
 				[ -f "$line" ] && \
@@ -230,7 +237,7 @@
 				tui-status $? "* Copied" "$(basename $line)" 
 				tui-log -t "$LOG" "$msg $(basename $line)"
 			fi
-		done #<"$TMP"
+		done <"$TMP"
 	fi
 	rm -fr "$TMP"
 	
