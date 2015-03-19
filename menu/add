@@ -79,7 +79,8 @@
 	tui-status $? "Created configuration: $PRJ" || exit $RET
 #echo "TESTING ----------------------------------------- TESTING"	
 	# Create the basic config file:
-	
+	tui-bol-dir "$(dirname $thisConf)"
+	touch "$thisConf"
 	echo "# Project configuration for \"$NAME\" ($LBL)" > "$thisConf"
 	tui-conf-set "$thisConf" prj_name "$NAME"
 	#set -x

@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.6
+	script_version=0.6.2
 #
 #	Title
 #
@@ -72,22 +72,13 @@
 			select tKeyb in $(localectl list-keymaps);do break;done
 		fi
 	
-		TZ="$(date +%Z%z)"
+		TZ="$(date +'%Z%z')"
 		if tui-yesno "Use '$TZ' for timezone?"
 		then	tTime="$TZ"
 		else	tTime=$(tui-read "Please enter your timezone value:")
 		fi
 		
 		DE=lxde
-		# o="$IFS";IFS="-";ls |grep pack|while read f DE none;do echo $DE;done;IFS="$o"
-		if ! tui-yesno "Use '$DE' as Desktop Environment?"
-		then	tui-echo "Please select your desktop environment (deskop=gnome):"
-			#o="$IFS";IFS="-"
-			DEs=$(ls /usr/share/spin-kickstarts/|grep livecd|while read line;do echo ${line:14:(-3)};done)
-			#IFS="$o"
-			select DE in $DEs;do break;done
-		fi
-		
 		printf '%s\n' "# Kickstart defaults for all projects" \
 			"language=\"$tLang\"" \
 			"keyboard=\"$tKeyb\"" \
@@ -97,11 +88,32 @@
 	fi
 	source "$allConf"
 	
+	# Use current config or create an 'empty template'?
+	tui-echo "Create a new template from system settings? (default)"
+	tui-echo "Or try to create a liveimage from current system? (BETA)" 
+	B="Current System"
+	A="New Template"
+	choice=$(tui-select "$A" "$B")
+	case "$choice" in
+	"$A")	# Which DE?
+		if ! tui-yesno "Use '$DE' as Desktop Environment?"
+		then	tui-echo "Please select your desktop environment (deskop=gnome):"
+			DEs=$(ls /usr/share/spin-kickstarts/|grep livecd|while read line;do echo ${line:14:(-3)};done)
+			DE=$(tui-select $DEs)
+		fi
+		template="$template_dir/livecd.ks"
+		;;
+	"$B")	template="$template_dir/livecd_user.ks"
+		;;
+	esac
+	
+
+	
 	# Create the file
 	cd "$prj_path"
 	if [ -f "$prj_name.ks" ]
 	then	if tui-yesno "File already exists, overwrite?"
-		then	[[ -z "$template" ]] && template=$template_dir/livecd.ks
+		then	#[[ -z "$template" ]] && template=$template_dir/livecd.ks
 			source "$template" > "$prj_name.ks" 
 		fi
 	else	source "$template" > "$prj_name.ks" 
@@ -150,8 +162,7 @@
 	
 	bitstring=""
 	# "opts=$opt"
-	printf '%s\n'   "# Git configuration for \"$prj_name\", created on $(date +%F %T)" \
-                        "prj_release=\"$prj_release\"" \
+	printf '%s\n'   "prj_release=\"$prj_release\"" \
 			"prj_label=\"$prj_label\"" \
 			"prj_title=\"$prj_title\"" \
 			"prj_outpath=\"$prj_outpath\"" \

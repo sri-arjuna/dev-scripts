@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -27,17 +27,18 @@
 #
 	TITLE="Developer Scripts"
 	APP=dev-scripts
+	VERSION="0.3.5"
 	DIR=/usr/share/$APP
-	project_version="0.3.3"
-	config=$HOME/.config/$APP/$APP.conf
-	readonly oPWD="$(pwd)"
-	export oPWD
+	config="$HOME/.config/$APP/$APP.conf"
+	readonly ds_oPWD="$(pwd)"
+	export ds_oPWD
 #
 #	Catch help
 #
 	case "$1" in
-	"-h")	echo "$APP ($TITLE) ($project_version)
-Usage:	ds [section ..] [task] [options] [project]
+	"-h"|"--help"|"-?"|"--?")
+		echo "$APP ($TITLE) ($VERSION)
+Usage:	ds [section ..] [task] [ [options] [project] ]
 
 Examples:
 	ds prj rpm edit DEMO

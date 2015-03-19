@@ -27,7 +27,7 @@
 	source /etc/tui/apps.conf #|| \
 	[ 0 -ne $UID ] || \
 		source $HOME/.config/tui/apps.conf
-	script_version=0.7.8
+	script_version=0.7.9
 	TOTAL_RET=0
 	TOTAL_COUNT=0
 	TOTAL_SKIP=0
@@ -122,8 +122,9 @@
 	# Was built by 'rpm'
 	# now looking for the latest...
 	[ -z "$TUI_TEMP_DIR" ] && exit 1
+	#list=$(find | $GREP -e $prj_name -e $VER | $GREP \.src\.rpm$)
 	cd "$dir_out" && \
-		list=$(find | $GREP -e $prj_name -e $VER | $GREP \.src\.rpm$) && \
+		list=$(ls -1tv *src.rpm) && \
 		for l in $list;do s="$l";done && \
 		SRC="$dir_out/$s"
 	tui-log $optVerb -t "$LOG" "Generated source rpm list (${#list[@]})"
@@ -143,17 +144,18 @@
 				T="$dist-$R-$A"
 				if [ -f "/etc/mock/$T.cfg" ]
 				then	TASKS+=" $prj_name-$T"
-					echo "mock --target=$A -r $T $SRC 1>>$LOG_MOCK 2>>$LOG_MOCK " > "$TUI_TEMP_DIR/$prj_name-$T"
+					echo "mock --target=$A -r $T $SRC 1>/dev/zero 2>>$LOG_MOCK " > "$TUI_TEMP_DIR/$prj_name-$T"
 					#echo "[ 0 -eq \$? ] && msg=\"Successfully built\" || msg=\"Failed to build\"" >> "$TUI_TEMP_DIR/$prj_name-$T"
 					#echo "tui-log -t \"$LOG\" \"\$msg $prj_name-$T\"" >> "$TUI_TEMP_DIR/$prj_name-$T"
 					CHECK=$(($CHECK + 1))
-				else	tui-status 4 "Configuration for task \"$T\" does not exist."
+				else	tui-printf -rS 4 "Configuration for task \"$T\" does not exist."
 					TOTAL_SKIP=$(( $TOTAL_SKIP + 1 ))
 				fi
 			done
 		done
 	done
 	#TASKS=$(echo $TASKS)
+	[ 0 -lt $TOTAL_SKIP ] && printf "\n"
 
 	cd "$prj_path"
 	if $hasSudo
@@ -198,29 +200,42 @@ EOF
 	tui-echo
 	#tui-echo "Moving files??"
 	
-	tui-bol-sudo && \
-		list=$(sudo find| $GREP  [64h]"\\."rpm$|grep -v debug) || \
-		(tui-echo "Please provide root password to move files to:" "$dir_out";su -c "list=$(find| $GREP  \[64h\]\\\\.rpm\\$|$GREP -v debug);export list")
+	
+	
+	if tui-bol-sudo
+	then	#list=$(sudo find| $GREP  "\\."rpm$|grep -v root)
+		list=$(find| $GREP  "\\."rpm$|$GREP -v root |$GREP -v debuginfo 2>/dev/zero)
+	else	tui-echo "Please provide root password to move files to:" "$dir_out"
+		su -c "list=$(find| $GREP  \\\\.rpm\\$|$GREP -v root|$GREP -v debuginfo);export list"
+	fi
 	tui-log $optVerb -t "$LOG" "Generated list of files to move"
 	# OLD
 		# result|grep -v debug |grep [46h]"\.rpm" 2>/dev/zero )  2>/dev/zero
 	if [ ! -z "$list" ]
-	then	# list variable is NOT empty
-		tui-log -t "$LOG" "$list"
-		tui-bol-sudo && \
-			( sudo chown -R $USER:$USER $list ; RET=$? ; export RET ) || \
-			( tui-echo "Please provide root password to chown the packages for $USER" ; usr="$USER" ; export usr list ; su -c "chown -R $usr:$usr $list ; RET=\$?;export RET" )
-		tui-status $RET "Chowned packages."
-		
-		# Shorten the list
+	then	# Shorten the list
 		LIST=""
 		for l in $list;do
 			echo "$LIST" | grep -q "$l" || \
 				LIST+=" $l"
 		done
 		
+		# list variable is NOT empty
+		tui-log -t "$LOG" "RAW: $list"
+		tui-log -t "$LOG" "Short: $LIST"
+		
+		if tui-bol-sudo
+		then	sudo chown -R $USER:$USER $LIST
+			RET=$?
+		else	tui-echo "Please provide root password to chown the packages for $USER" 
+			usr="$USER" 
+			export usr LIST 
+			su -c "chown -R $usr:$usr $LIST ; RET=\$?;export RET"
+		fi
+		tui-status $RET "Chowned packages."
+		
 		tui-echo
 		tui-echo "Moving packages to $dir_out:"
+		tui-log $optVerb "$LOG" "Set outputdir: $dir_out"
 		for F in $LIST;do
 			tui-printf -rS 2 " * Moving: $(basename $F)"
 			#mv -f "$F" "$dir_out"

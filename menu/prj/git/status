@@ -20,6 +20,8 @@
 # ------------------------------------------------------------------------
 #
 #	
+	. /etc/tui/commands.conf
+	. /etc/tui/status.conf
 	script_version=0.3
 #
 #	Title
@@ -32,81 +34,155 @@
 		fi
 	else	LBL="$4"
 	fi
+	ISSUE=0
 	title="$OA_TITLE - GIT Handler - Status"
 	tui-title "$title ($script_version)"
-	[[ -f "$CONF_GIT" ]] || \
+	[ -f "$CONF_GIT" ] || \
 		(tui-wait 5s "Please take care to provide all required data...";ds setup)
 	#source "$CONF_GIT" || exit 1
-	TMP=$DIR_BASE/tmp.tmp
+	oLC_ALL="$LC_ALL"
+	LC_ALL=C
+	export LC_ALL
+	TMP="$DIR_BASE/tmp.tmp"
+	LAST="$DIR_BASE/git-last-tag"
 #
 #	Variables
 #
 	if [ -z "$LBL" ]
 	then	tui-echo "Please select a project to make:"
-		select LBL in $(cd "$DIR_CFG";ls);do break;done
+		LBL=$(tui-select $(cd "$DIR_CFG";ls))
 		tui-status $? "Selected: $LBL" || exit $?
 	fi
 	[ -f "$CONF_GIT" ] && source "$CONF_GIT"
+	[ -f "$LAST" ] || ( touch "$LAST" ; echo "#Stores last shown tags of remote only projects" > "$LAST" )
 	source "$DIR_CFG/$LBL/$LBL.conf"
-	if $remoteOnly
-	then	tui-status 1 "Project \"$prj_name\" is remote only!"
-		exit 1
+	if ! cd "$prj_path" 
+	then	tui-status $? "Couldnt change to project dir ($prj_path)..."
+		exit $?
 	fi
+	
+
 	if [ -f "$DIR_CFG/$LBL/git.conf" ] 
 	then	source "$DIR_CFG/$LBL/git.conf"
 	else	tui-status 1 "This project has no git config!"
 		exit 1
 	fi
-	cd "$prj_path"
-	oLC_ALL="$LC_ALL"
-	export LC_ALL=C
-	str="$(git status)"
+	
+	if $remoteOnly
+	then	tui-status 111 "Project \"$prj_name\" is remote only!"
+#set -x
+		val=1
+		if [ ! -z "$prj_name" ] && [ -d "$prj_name" ]
+		then	cd "$prj_name" && val=0
+		fi
+		if [ 1 -eq $val ]
+		then	tui-yesno "Retrieve code now?" || exit 0
+			git clone $URL "$prj_name"
+			tui-status $? "Retrieved lasted code" || exit 1
+			cd "$prj_name"
+		else	tui-printf -rS 2 "Pulling latest changes..."
+			git pull . 1>/dev/zero 2>/dev/zero
+			tui-status $? "Retrieved lasted code" || exit 1
+		fi
+		last_val=$(tui-conf-get "$LAST" "$prj_name" )
+		new_val=$(git tag -l | tail -n 1)
+		[ -z "$last_val" ] && last_val="none"
+		[ -z "$new_val" ] && \
+			new_val="none" || \
+			tui-conf-set "$LAST" "$prj_name" "$new_val"
+		tui-echo "Last shown tag: $last_val" "Newest tag found: $new_val"
+		exit 0
+#set +x
+	fi
+
+
+#str="$(git status)"
+	git status . > "$TMP"
 	list_add=""
 	list_del=""
 	list_mod=""
-		
-	# has changed
-	echo "$str" | \
-		grep -q mod && \
-		list_mod=$(echo "$str"|\
-			grep ^mod|\
-			awk '{print $2}')
 	
-	# Was removed
-	echo "$str" | \
-		grep -q del && \
-		list_del=$(echo "$str"|\
-			grep ^del|\
-			awk '{print $2}')
+	#echo "$TMP"
+	#echo "$str" ; exit
 	
-	# Is added
-	len=0
-	len=$(cat "$TMP"|wc -l)
-	len=$((len+1))
-	if echo "$str"|grep -A$len "git add <" |grep -v \"  > "$TMP"
-	then	echo "$str"|grep ^untra | awk '{print $3}' >> "$TMP"
-		list_add=$(cat "$TMP")
-	fi
+	#Added files
+	$GREP -q Untracked "$TMP" && \
+		doAdded=true  && \
+		ISSUE=$(( $ISSUE + 1)) || \
+		doAdded=false
+	#Modified files
+	$GREP -q modified "$TMP" && \
+		doModified=true  && \
+		ISSUE=$(( $ISSUE + 1))  || \
+		doModified=false
+	#Deleted files
+	$GREP -q deleted "$TMP" && \
+		doDeleted=true  && \
+		ISSUE=$(( $ISSUE + 1))  || \
+		doDeleted=false
+	
 #
 #	Display & Action
 #
-	tmp="$list_add$list_del$list_mod"
-	tmp="$list_add $list_del $list_mod"
+	# Check for pull
+	# Get the word, and check that one.. up-to-date / ahead.. what elese? makea case
+#	if ! $GREP -q up-to-date "$TMP" || $GREP -q ahead "$TMP"
+#	then	# Its recomended to sync
+		# TODO QUIET EXIT CODE
+#		tui-status 111 "your repositry is not in sync!"
+#		tui-yesno "Do you want to pull it now?" && \
+#			git pull
+#	fi
+	
+	#tmp="$list_add$list_del$list_mod"
+	#tmp="$list_add $list_del $list_mod"
+	#tui-title "unsure: $tmp"
 	#tmp=""
-	if [[ "" = "$(echo $tmp)" ]]
-	then	tui-echo "Nothing to do" "commit maybe??"
-	else	tui-echo "Got some work to do:" "$(echo $tmp)"
+	if [ $ISSUE -eq 0 ]
+	then	tui-echo "Nothing to do" "commit or push maybe??"
+		tui-status $RET_TODO "TODO follow ups"
+	else	tui-echo "Got some work to do:" "$ISSUE" #"$(c $tmp)"
+		
+		if ! $GREP -q up-to-date "$TMP" || $GREP -q ahead "$TMP" #|| "is based on .. but upstream is gone."
+		then	# Its recomended to sync
+			# TODO QUIET EXIT CODE
+			tui-status 111 "your repositry is not in sync!"
+			tui-yesno "Do you want to pull it now?" && \
+				git pull
+		fi
+		
+		# Fill lists according to need	
+		if $doAdded
+		then	# Is added
+			echo TODO added
+			list_add=$($GREP -i untrack -A20 "$TMP"|$GREP ^[[:space:]]|$AWK '{print $2}')
+			tui-title "Found files (added):" #"$list_add"
+			tui-list $list_add
+		fi
+		if $doModified
+		then	echo TODO modified
+			list_mod=$($GREP -i modified "$TMP"|$AWK '{print $2}')
+			tui-title "Found files (mod):" 
+			tui-list ${list_mod}
+		fi
+		if $doDeleted
+		then	echo TODO deleted
+			list_del=$($GREP -i deleted "$TMP"|$AWK '{print $2}')
+			tui-title "Found files (del):" #"$(echo $list_del)"
+			tui-list ${list_del}
+		fi
+		tui-title "DEBUG ON"; cat $TMP ; tui-title "DEBUG OFF"
 		##
 		## TODO
 		##	PSM für files/status
 		## TODO
 		##
-		if tui-yesno "Do you want to 'semi-auto' do these now?"
-		then	# TODO handling for remove / add
-			tui-status 0 "Ok, lets get it started."
+#		if tui-yesno "Do you want to 'semi-auto' do these now?"
+#		then	# TODO handling for remove / add
+#			tui-status 0 "Ok, lets get it started."
 			
-		else	tui-status 0 "OK, you do it manualy then..."
-		fi
+#		else	tui-status 0 "OK, you do it manualy then..."
+#		fi
 	fi
 #
 #	Exit

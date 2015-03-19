@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.7.4
+	script_version=0.7.5
 #
 #	Title
 #
@@ -32,7 +32,7 @@
 #
 #	Variables
 #
-	LOG=$LOG_LIVECD
+	LOG="$LOG_LIVECD" ; touch "$LOG"
 	NONVERBOSE="--quiet"
 	beVerbose=false
 	ov=false
@@ -96,7 +96,7 @@
 	case $arch_style in
 	number)		ARCH=${ARCH}bit	;;
 	kernel)		str="$(uname -r)"
-			if [ x86_64 -eq $(uname -m) ] && $do32bit
+			if [ x86_64 = $(uname -m) ] && $do32bit
 			then	str=${str/$(uname -m)/i686}
 			fi
 			# Remove fc$RELEASEVER
@@ -145,27 +145,30 @@
 		RET=$?
 	else	echo "$cmd" > "$TUI_TEMP_FILE.cmd"
 		echo "${cmd/$verboseString/}" >> "$LOG"
-		tui-bgjob "$TUI_TEMP_FILE.cmd" "Building $prj_name ($prj_label.iso) live image...   (~30-60m)" "Built $prj_name ($prj_path/$prj_label.iso) live image."
+		tui-bgjob "$TUI_TEMP_FILE.cmd" "Building $prj_name ($prj_label.iso) live image...   (~30-60m)" "Built $prj_path/$prj_label.iso"
 		RET=$?
+		#echo $RET ; exit
 	fi
 		
 #set -x	
 	if [ 0 -eq $RET ]
 	then	# Its already been chown'ed
-		tui-bol-dir "$prj_outpath/" 1>/dev/zero && \
+		tui-log $optVerb -t "$LOG" "Build was successfull"
+		tui-bol-dir "$prj_outpath/" 1>/dev/zero 2>/dev/zero && \
 			msg="$prj_outpath exists." || \
 			msg="$prj_outpath does NOT exist."
-		tui-log $optVerb -t "$LOG""$msg"
+		tui-log $optVerb -t "$LOG" "$msg"
 		
-		if [ -f "$PWD/${prj_label}.iso" ]
+		if [ -f "$prj_path/${prj_label}.iso" ]
 		then	tui-log $optVerb -t "$LOG" "Found: $PWD/${prj_label}.iso"
 			target="$prj_outpath/${prj_label}.iso"
 			RET=1
-			mv "$PWD/${prj_label}.iso" "$prj_outpath/" && \
-				tui-log $optVerb -t "$LOG" "Successfully moved to $target" && \
-				RET=0 || \
-				tui-log $optVerb -t "$LOG" "Failed to move to $target"
-		else	tui-log $optVerb -t "$LOG" "NOT found: $PWD/${prj_label}.iso"
+			if mv "$prj_path/${prj_label}.iso" "$target" 
+			then 	tui-log $optVerb -t "$LOG" "Successfully moved to $target"
+				RET=0
+			else	tui-log $optVerb -t "$LOG" "Failed to move to $target"
+			fi
+		else	tui-log $optVerb -t "$LOG" "NOT found: $parj_path/${prj_label}.iso"
 		fi
 		tui-status $? "Moved to $prj_outpath/" "$prj_label.iso"
 	elif [ false = $beVerbose ]

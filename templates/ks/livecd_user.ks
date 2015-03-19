@@ -1,3 +1,7 @@
+[ -z "$DE" ] && \
+	DE=${DESKTOP_SESSION##*/}
+
+
 cat << EOF
 # Based on: fedora-live-base.ks
 # Changed by: sea
@@ -18,6 +22,7 @@ cat << EOF
 #
 #	Desktop Environment files
 #
+	# This should refer to your current DE
 	%include	/usr/share/spin-kickstarts/fedora-livecd-$DE.ks
 #
 #

@@ -1,5 +1,5 @@
 Name:        dev-scripts
-Version:     0.3.5
+Version:     0.3.6
 Release:     1%{?dist}
 Summary:     A collection of scripts for developers
 
@@ -81,6 +81,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Mar 18 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.6
+- Added:      ds prj git clone|commit|config|status
+
 * Sun Feb 15 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.5
 - Updated:    ds prj <ks,mock,rpm> make
 - Updated:    ds prj rpm list

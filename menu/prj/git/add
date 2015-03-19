@@ -20,7 +20,8 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.7
+	. tui
+	script_version=0.8
 #
 #	Title
 #
@@ -32,11 +33,11 @@
 #
 #	Variables
 #
-	if [ -z "$4" ] # || [[ ! -z "$LBL" ]]
-	then	if [ -d "$DIR_CFG/$1" ]
+	if [ -z "$4" ] # || [ ! -z "$LBL" ]
+	then	if [ -d "$DIR_CFG/$1" ] && [ ! -z "$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
-			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
+			LBL=$(tui-select $(cd "$DIR_CFG";ls|$GREP -v [a-zA-Z]*\.))
 		fi
 	else	LBL="$4"
 	fi
@@ -44,7 +45,7 @@
 	source "$DIR_CFG/$LBL/$LBL.conf"
 	tConf="$DIR_CFG/$LBL/git.conf"
 	
-	. /etc/tui/apps.conf
+	#. /etc/tui/apps.conf
 	REQ_ADD=false
 	remoteOnly=false
 	README="$prj_name
@@ -102,9 +103,12 @@ Example Readme
 #	
 	cd "$prj_path" || exit 1
 	if $remoteOnly
-	then	msg="Its remote only, nothing to do yet..."
-		RET=4
-	else	if [ -d .git ]
+	then	#msg="Its remote only, nothing to do yet..."
+		tui-yesno "This will work with in $prj_path, continue?" || exit 0
+	#	RET=4
+	fi
+	#else
+		if [ -d .git ]
 		then	msg="There is already a git repositry."
 			RET=4
 		else	tui-echo "Preparing first git action"
@@ -131,7 +135,7 @@ Example Readme
 				msg="Created GIT repositry for $prj_name"
 			fi
 		fi
-	fi
+	#fi
 	tui-status $RET "$msg"
 	
 	if $REQ_ADD || ! grep origin "$prj_path/.git/config"

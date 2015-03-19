@@ -43,7 +43,7 @@
 	LOG=$LOG_GIT
 	beVerbose=false
 	NONVERBOSE="--quiet"
-	while getopts "36vs" opts
+	while getopts "36vsio" opts
 	do 	case $opts in
 		#3|6)	echo "nothing to do"	;;
 		v)	beVerbose=true

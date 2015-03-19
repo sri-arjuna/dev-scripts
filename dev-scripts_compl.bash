@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # bash completition for dev-scripts
 # file: /etc/bash_completion.d/dev-scripts_compl.bash
 # 2014.11.21 by sea, based on blkid
@@ -21,9 +22,9 @@ _dev-scripts_module()
 	# But only use this, if 'prev' was one using entries from $DIR
 	# This list is dynamicly (automaticly) updated
 	case $prev in
-	"-"[36v]|add|make|list|edit|review)
+	"-"[36v]|add|make|list|edit|review|status)
 		case $cur in
-		[a-zA-Z]*)	COMPREPLY=( $( compgen -W "$(cd $DIR 2>/dev/null && echo $cur*)" -- "$cur" ) ) 
+		""|[a-zA-Z]*)	COMPREPLY=( $( compgen -W "$(cd $DIR 2>/dev/null && echo $cur*)" -- "$cur" ) ) 
 				return 0
 				;;
 		esac
@@ -72,7 +73,7 @@ _dev-scripts_module()
 		r*)	COMPREPLY=( $(compgen -W "review rpm" -- $cur) )
 			return 0
 			;;
-		s*)	COMPREPLY=( $(compgen -W "setup ssh" -- $cur) )
+		s*)	COMPREPLY=( $(compgen -W "setup ssh status" -- $cur) )
 			return 0
 			;;
 	esac
@@ -88,7 +89,7 @@ _dev-scripts_module()
 	#		COMPREPLY=( $(compgen -f -- $cur) )
 	#		return 0
 	#		;;
-		"-"[36v]|add|make|list|edit|review)
+		""|"-"[36v]|add|make|list|edit|review|status)
 			COMPREPLY=( $( compgen -W "$(cd $DIR 2>/dev/null && echo *)" -- "$cur" ) ) 
 			return 0
 			;;

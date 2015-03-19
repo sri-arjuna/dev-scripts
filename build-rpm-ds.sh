@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -27,10 +27,10 @@
 #
 	. $HOME/.config/fas/fas.conf
 	app=dev-scripts
-	[[ -z $1 ]] && \
+	[ -z "$1" ] && \
 		dir_out="$FAS_REVIEW/$app" || \
 		dir_out="$1"
-	[[ -d "$dir_out" ]] || mkdir -p "$dir_out"
+	[ -d "$dir_out" ] || mkdir -p "$dir_out"
 	
 	ext=tar.gz
 	# If this is not found, retrieve code from git
@@ -39,7 +39,7 @@
 	GIT=https://github.com/$HUB_USER/$app.git
 	#build_link=/usr/bin/rpm-build-$app
 	# Get script & spec homedir
-	[[ "." = "$(basename $0)" ]] && \
+	[ "." = "$(basename $0)" ] && \
 		home="$(pwd)" || \
 		home="$(dirname $0)"
 	oPWD=$(pwd)
@@ -47,22 +47,22 @@
 #	Prepare
 #
 	cd "$home"
-	[[ -d $HOME/rpmbuild ]] && rpmdev-wipetree
+	[ -d "$HOME/rpmbuild" ] && rpmdev-wipetree
 	rpmdev-setuptree
-	[[ -f "$CHECK_FOR" ]] || git clone $GIT ../$app
+	[ -f "$CHECK_FOR" ] || git clone $GIT ../$app
 #
 #	Version & tarball name
 #
 	VER=$(grep -i "Version:" "$app.spec"|awk '{print $2}')
-	TARBALL=$app-$VER.$ext #$(basename $(grep -i "Source0:" "$app.spec"|grep -v ^"#"|awk '{print $2}'))
+	TARBALL="$app-$VER.$ext" #$(basename $(grep -i "Source0:" "$app.spec"|grep -v ^"#"|awk '{print $2}'))
 #
 #	Place file in rpmbuild and $dir_out
 #	
-	cp $app.spec			$HOME/rpmbuild/SPECS
-	cp $app.spec			"$dir_out"
-	[[ -d ../$app ]] || (mkdir ../$app;cp -r * ../$app )
-	tar -acf $dir_out/$TARBALL 	../$app
-	ln -sf $dir_out/$TARBALL 	$HOME/rpmbuild/SOURCES/$TARBALL
+	cp "$app.spec"			"$HOME/rpmbuild/SPECS"
+	cp "$app.spec"			"$dir_out"
+	[ -d ../$app ] || (mkdir ../$app;cp -r * ../$app )
+	tar -acf "$dir_out/$TARBALL" 	../$app
+	ln -sf "$dir_out/$TARBALL" 	"$HOME/rpmbuild/SOURCES/$TARBALL"
 #	
 # 	Build
 #
@@ -76,10 +76,10 @@
 	
 	cd "$dir_out"
 	pwd
-	ls $dir_out/ | grep $app
+	ls "$dir_out"/ | grep $app
 #
 #	Clean up
 #
 	rpmdev-wipetree
-	rm -fr $HOME/rpmbuild
+	rm -fr "$HOME/rpmbuild"
 	cd "$oPWD"

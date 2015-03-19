@@ -1,10 +1,3 @@
-echo "DONT USE THIS YET!"
-echo "its just a note ..."
-exit
-
-git rm $(git status|grep del|awk '{print $2}')
-git add $(git status|grep modi|awk '{print $2}')
-
 #!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
@@ -34,14 +27,17 @@ git add $(git status|grep modi|awk '{print $2}')
 #
 	title="$OA_TITLE - GIT Handler - Clone repositry"
 	tui-title "$title ($script_version)"
-	[ -f "$CONF_GIT" ] || \
-		(tui-wait 5s "Please take care to provide all required data...";ds setup)
+	#[ -f "$CONF_GIT" ] || \
+	#	(tui-wait 5s "Please take care to provide all required data...";ds setup)
+	DIR_CFG="$HOME/.config/dev-scripts/prjs"	# Temporary only
+	CONF_GIT="$DIR_CFG/../git.conf"			# Temporary only
+	# TODO :: Commment-invert the above 4 lines back when done
 	source "$CONF_GIT" || ds setup
 #
 #	Variables
 #
-	if [ -z "$4" ] # || [ ! -z "$LBL" ]
-	then	if [ -d "$DIR_CFG/$1" ] && [ ! -z "$1" ]
+	if [ -z "$4" ]
+	then	if [ ! -z "$1" ] && [ -d "$DIR_CFG/$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
 			LBL=$(tui-select $(cd "$DIR_CFG";ls|$GREP -v [a-zA-Z]*\.))
@@ -50,9 +46,29 @@ git add $(git status|grep modi|awk '{print $2}')
 	fi
 	[ -f "$CONF_GIT" ] && source "$CONF_GIT"
 	source "$DIR_CFG/$LBL/$LBL.conf"
-	tConf="$DIR_CFG/$LBL/git.conf"
+	source "$DIR_CFG/$LBL/git.conf" || exit 1
 #
 #	Display and action
 #
-	cd "$prj_path"
-	
+	cd "$prj_path" || exit 1
+	if $remoteOnly
+	then	echo "line:$LINENO works -- already missing !!"
+		echo "line:$LINENO works --==-- \$remoteOnly is $remoteOnly in $SHELL"
+		pwd
+		ls
+		if [ -d "$prj_name" ]
+		then	echo "line:$LINENO works"
+			set -x
+			[ -d "$prj_name/.git" ] && \
+				msg="Remote only git repositry already exists" || \
+				msg="Cloning remote only repositry to $prj_path/$prj_name"
+
+			if tui-status $? "$msg"
+			then	cd "$prj_name" 
+				echo git pull
+			else	echo git clone "$URL" "$prj_name" ; cd "$prj_name" 
+			fi
+		else	git clone "$URL" "$prj_name" ; cd "$prj_name" 
+		fi
+	else	tui-printf -S $RET_TODO "Regular project"
+	fi

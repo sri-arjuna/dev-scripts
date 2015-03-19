@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
 # Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
@@ -26,7 +26,7 @@
 	[ 0 -eq $UID ] || \
 		source $HOME/.config/tui/apps.conf
 		
-	script_version=0.8.3
+	script_version=0.8.9
 #
 #	Title
 #
@@ -43,8 +43,10 @@
 	beVerbose=false
 	NONVERBOSE="--quiet"
 	doSource=false
+	doInstall=false
+	doOpen=false
 	optVerb=""
-	while getopts "vs" opts
+	while getopts "viso" opts
 	do 	case $opts in
 		v)	beVerbose=true
 			NONVERBOSE=""
@@ -52,15 +54,19 @@
 			;;
 		s)	doSource=true
 			;;
+		i)	doInstall=true
+			;;
+		o)	doOpen=true
+			;;
 		esac
 	done
 	shift $(($OPTIND - 1))
 	
 	if [ -z "$4" ] # || [ ! -z "$LBL" ]
-	then	if [ -d "$DIR_CFG/$1" ]
+	then	if [ -d "$DIR_CFG/$1" ] && [ ! -z "$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
-			LBL=$(tui-select $(cd "$DIR_CFG";ls|$GREP -v \.{cmd,info,help}))
+			LBL=$(tui-select $(cd "$DIR_CFG";ls|$GREP -v [a-zA-Z]*\.))
 		fi
 	else	LBL="$4"
 	fi
@@ -119,6 +125,7 @@
 	if $remoteOnly
 	then	newDest="$prj_path/$prj_name"
 		tui-log $optVerb -t "$LOG" "Saving remote only project to $newDest"
+		#cd "$newDest"
 	else	newDest="$DEST/SOURCES/"
 	fi
 	
@@ -136,6 +143,7 @@
 		for L in $LIST;do [ -f "$L" ] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied to $newDest: $L";done
 	
 	# A little tweaking for the remoteOnly projects
+	cd "$prj_path"
 	if $remoteOnly
 	then	# Copy the required files also to SOURCES, so setting newDest back to original
 		newDest="$DEST/SOURCES/"
@@ -151,7 +159,11 @@
 		# We are in $prj_path, and remote only projects are substored in $prj_name
 	#	[ ! -z "$LIST" ] && \
 	#		tui-log $optVerb -t "$LOG" "Generated remoteOnly LIST=$LIST"
-		cd "$prj_name"
+		if [ -d "$prj_name" ]
+		then	cd "$prj_name"
+		else	tui-log $optVerb -t "$LOG" "Code for $prj_name not retrieved yet."
+			ds -q prj git clone "$LBL"
+		fi
 		#tui-log $optVerb -t "$LOG" "Changed from $OLDPWD (remoteOnly part) to $PWD"
 	fi
 	
@@ -241,12 +253,11 @@
 	fi
 	rm -fr "$TMP"
 	
-	
+	# Copy the last files
 	cp "$rpm_builddir/SOURCES/$TARBALL" "$DEST"
 	tui-status $? "* Copied" "$(basename $TARBALL)"
 	cp "$specfile" "$DEST"
 	tui-status $? "* Copied" "$(basename $specfile)"
-	
 	
 	# Increase build number if built was successfull
 	if [ 0 -eq $RET ]
@@ -260,6 +271,19 @@
 	if [ $RET -eq 0 ] && $rpm_cleandir_after
 	then 	rpmdev-wipetree 2>&1 1>/dev/zero
 		tui-status $? "Cleaned $rpm_builddir"
+	fi
+	
+	# After build Option handling
+	$doOpen && \
+		tui-filemgr "$DEST" &
+	if $doInstall
+	then	list=$(cd "$DEST";ls -1tv --hide=*src.rpm --hide=*gz --hide=*debug* --hide=*spec|$GREP $prj_name)
+		for item in $list;do echo > /dev/zero ; done
+		cd "$DEST"
+		tui-bol-sudo && \
+			sudo tui-install "./$item" || \
+			su -c "tui-install ./$item"
+		cd "$OLDPWD"
 	fi
 	
 	exit $RET

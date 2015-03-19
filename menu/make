@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
 # Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
@@ -23,30 +23,45 @@
 #
 	# BUGFIX, need tui-browser fix this first
 	#shift 1
+	. /etc/tui/commands.conf
 	. /etc/tui/status.conf
+	
 	LBL=""
 	VERBOSE=""
 	ARGS=""
-	script_version=0.5
-	while getopts "v36hs" opts
+	script_version=0.5.3
+	while getopts "v36hsio" opts
 	do 	case $opts in
 		#v)	VERBOSE="-v"	;;
+		h)
+			echo "ds make ($script_version)
+Usage: ds make [options] [LBL]
+Where options are:
+	-3|6	Force creating 32/64bit - LiveCD only
+	-i	Install created package (rpm only)
+	-o	Open output directory
+	-v	Verbose mode
+	
+" 
+			exit 0
+			;;
 		*)	ARGS+=" -$opts"	;;
 		esac
 	done
 	#[[ -z "$ARGS" ]] || ARGS="-$ARGS"
 	shift $(($OPTIND - 1))
-	[[ -z "$1" ]] && LBL="" || LBL="$1"
-	[[ -z $LBL ]] || str=" ($LBL)"
+	[ -z "$1" ] && LBL="" || LBL="$1"
+	[ -z "$LBL" ] || str=" ($LBL)"
 	TASK_LIST=$(cd /usr/share/dev-scripts/menu/prj;ls -l|grep ^d|awk '{print $9}'|sed s,ks,livecd,g)	#|grep -v git
 	LIST=""
 #
 #	Display & Action
 #
 	tui-title "Make all project tasks$str ($script_version)"
-	if [[ -z "$LBL" ]]
+	if [ -z "$LBL" ]
 	then	tui-echo "Please select a project to make:"
-		select LBL in $(cd "$DIR_CFG";ls);do break;done
+		#select LBL in $(cd "$DIR_CFG";ls);do break;done
+		LBL=$(tui-select $(cd "$DIR_CFG";ls))
 		tui-status $? "Selected: $LBL" || exit $?
 	fi
 	old="$(pwd)"
@@ -56,9 +71,9 @@
 	switchMock=false
 	for L in $TASK_LIST;do 
 		#echo $L
-		[[ -f "$L.conf" ]] && \
+		[ -f "$L.conf" ] && \
 			LIST+=" $L" && \
-			[[ $L = mock ]] && \
+			[ $L = mock ] && \
 			switchMock=true
 	done
 	#echo $LIST
@@ -93,6 +108,6 @@
 		esac
 		
 		#echo $cmd$add $ARGS
-		[[ -z "$add" ]] || $cmd$add $VERBOSE $ARGS $LBL
-		#[[ -z "$add" ]] || $cmd$add $LBL $VERBOSE
+		[ -z "$add" ] || $cmd$add $VERBOSE $ARGS $LBL
+		#[ -z "$add" ] || $cmd$add $LBL $VERBOSE
 	done
