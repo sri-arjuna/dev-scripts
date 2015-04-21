@@ -1,0 +1,220 @@
+#!/usr/bin/env bash
+# ------------------------------------------------------------------------
+#
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+#
+# ------------------------------------------------------------------------
+#
+#	
+	#. /etc/tui/commands.conf
+	. tui
+	script_version=0.2
+#
+#	Title
+#
+	title="$OA_TITLE - RPM Handler - Edit specfile"
+	tui-title "$title ($script_version)"
+#
+#	Variables
+#
+	TMP="$TUI_TEMP_FILE"
+	YES=false
+	while getopts y opt
+	do	case $opt in
+		y)	YES=true	;;
+		esac
+	done
+	shift $(($OPTIND-1))
+	
+	if [ -d "$DIR_CFG/$1" ] && [ ! -z "$1" ]
+	then	LBL="$1"
+	else	tui-echo "Please select the label to work with:"
+		LBL=$(tui-select $(cd "$DIR_CFG";/bin/ls|grep -v \.[!/]))
+	fi
+	
+	source "$DIR_CFG/$LBL/$LBL.conf"
+	if ! source "$DIR_CFG/$LBL/rpm.conf" 2>/dev/zero
+	then	tui-status $? "Could not find a rpm.conf for $prj_name."
+		exit $?
+	fi
+	source "$CONF_RPM"
+	$useFAS && source $HOME/.config/fas/fas.conf && prj_outpath="$FAS_REVIEW"
+	
+	
+#
+#	Display
+#
+	tui-status 111 "Selected project:"	"$LBL"
+	if [ -z "$prj_outpath" ]
+	then	# Could not figure the default out path
+		tui-echo "Could not find a default output directory for $prj_name"
+		prj_outpath=$(tui-read "Where shall dev-script place created rpm packages?")
+		[ -z "$prj_outpath" ] && tui-printf -S 1 "Must provide an output path!" && exit 1
+		if [ ! -d "$prj_outpath" ]
+		then	tui-echo "Path \"$prj_outpath\" does not exist."
+			tui-yesno "Create it now?" && tui-bol-dir "$prj_outpath"
+		fi
+	fi
+	cd "$prj_outpath"
+	# Check for subdir if FAS
+	
+	[ -d "$prj_name" ] && cd "$prj_name"
+	pkgs_total=$(find | $SED s,"./",,g|$GREP .rpm$|sort )
+	num_total=$(echo "$pkgs_total"|wc -l)
+	
+	pkgs_src=$(echo "$pkgs_total"|$GREP .src.)
+	num_src=$(echo "$pkgs_src"|wc -l)
+	
+	pkgs_32=$(echo "$pkgs_total"|$GREP .i*86.)
+	num_32=$(echo "$pkgs_32"|wc |$AWK '{print $2}')
+	
+	pkgs_64=$(echo "$pkgs_total"|$GREP .x86_64.)
+	num_64=$(echo "$pkgs_64"|wc |$AWK '{print $2}')
+	
+	pkgs_noarch=$(echo "$pkgs_total"|$GREP .noarch.)
+	num_noarch=$(echo "$pkgs_noarch"|wc -l)
+	
+	pkgs_debug=$(echo "$pkgs_total"|$GREP -i debug)
+	num_debug=$(echo "$pkgs_debug"|wc -l)
+	
+	
+	tui-echo "Found $num_total packages."
+	tui-echo "Found $num_src source packages."
+	tui-echo "Found $num_noarch noarch packages."
+	tui-echo "Found $num_64 64 bit packages."
+	tui-echo "Found $num_32 32 bit packages."
+	tui-echo "Found $num_debug debug packages."
+	
+	
+	[ -z "$2" ] && \
+		selected=$(tui-select Total Source NoArch  32 64 Debug) || \
+		selected="$2"
+	if [ ! rpm = "${2##*./}" ]
+	then	case "${selected,,}" in
+		total)	array_work=($(echo "${pkgs_total}"))	;;
+		source)	array_work=($(echo "${pkgs_src}"))	;;
+		noarch)	array_work=($(echo "${pkgs_noarch}"))	;;
+		32)	array_work=($(echo "${pkgs_32}"))	;;
+		64)	array_work=($(echo "${pkgs_64}"))	;;
+		debug)	array_work=($(echo "${pkgs_debug}"))	;;
+		esac
+
+		#for a in "${array_work[${#array_work[@]}-1]}";do done
+		a="${array_work[${#array_work[@]}-1]}"
+	
+		tui-echo "Assuming latest:" "$a"
+		if ! $YES
+		then	tui-yesno "Is this correct?" || a=$(tui-select "${array_work[@]}")
+		fi
+	else	a="$3"
+	fi
+	
+	PKG_RAW="$PWD/$a-review.txt"
+	PKG="${PKG_RAW/txt/html}"
+	
+	printf "rpmlint \"$PWD/$a\" > \"$PKG_RAW\"" > "$TMP"
+	tui-bgjob -f "$PKG_RAW" "$TMP" "Generating raw report" "Generated raw report in: $PKG_RAW"
+	
+	input="$PKG_RAW"
+	output="$PKG"
+	touch "$TMP.sts"
+	
+	PID=""
+	(
+		MODES="Errors Warnings Files RawReport"
+		wrng=""
+		errs=""
+		
+		html5-html > 	"$output"
+		html5-h "Review: $a" >> "$output"
+		html5-hr >> "$output"
+		
+		echo Tarball > "$TMP.sts"
+		TARBALL=$(find | $GREP "\.tar\."|sort|tail -n1)
+		[ ! -z "$TARBALL" ] && \
+			[ -f "$TARBALL" ] && \
+			html5-a -l Tarball "$TARBALL" >> "$output"
+		
+		echo Specfile > "$TMP.sts"
+		SPEC=$(find | $GREP "\.spec"|sort|tail -n1)   # > /dev/stderr
+		[ ! -z "$SPEC" ] && \
+			[ -f "$SPEC" ] && \
+			html5-a -l Specfile "#spec" >> "$output"
+		
+		for mode in $MODES
+		do	html5-a -n "#$mode" -l $mode "#$mode" >> "$output"
+		done
+		
+		html5-hr >> "$output"
+		for mode in $MODES
+		do	echo "${mode,,}" > "$TMP.sts"
+			echo "" > "$TMP"
+			c_MSG=0
+			
+			case $mode in
+			Errors)
+				$GREP ": E:" "$input" | while read line ; do
+					echo "$line<br>" >> "$TMP"
+				done
+				;;
+			Warnings)
+				$GREP ": W:" "$input" | while read line ; do
+					echo "$line<br>" >> "$TMP"
+				done
+				;;
+			Files)
+				(html5-table ;html5-tr) > "$TMP"
+				html5-td "$(html5-a -n $mode '')<textarea cols=75 rows=30>$(rpm2cpio "$a" | cpio --quiet -t)</textarea>" >> "$TMP"
+				c_MSG=$(wc -l "$TMP"|$AWK '{print $1}')
+				if [ ! -z "$SPEC" ]
+				then	html5-td  " " >> "$TMP"
+					html5-td "$(html5-a -n spec '')<textarea cols=75 rows=30>$(cat $SPEC)</textarea>" >> "$TMP"
+				fi
+				( html5-tr -e;html5-table -e) >> "$TMP"
+				;;
+			RawReport)
+				#html5-a -n $mode ''  >> "$TMP"
+				STRING=$(cat "$PKG_RAW")
+				echo "<textarea cols=150 rows=30>$STRING</textarea>" >> "$TMP"
+			esac
+			
+			if [ ! $mode = Files ] 
+			then	[ "" = "$(cat $TMP)" ] && \
+					c_MSG=0 || \
+					c_MSG=$(wc -l "$TMP"|$AWK '{print $1}')
+			fi	
+			html5-a -n $mode ''   >> "$output"
+			html5-h -2 "$mode ($c_MSG)" >> "$output"
+			cat "$TMP" >> "$output"
+			html5-hr >> "$output"
+		done
+		
+		
+		
+		#html5-tr -e -t 1 >> "$output"
+		html5-html -e >> "$output"
+		
+	) &
+	PID=$!
+	
+	while ps | $GREP $PID|$GREP -v -q $GREP
+	do
+		tui-progress "Parsing for $(cat $TMP.sts)"
+		sleep 1
+	done
+	
+	tui-web "$PKG"

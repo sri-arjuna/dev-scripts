@@ -150,12 +150,16 @@
 		
 		tui-status -r 2 "Generating list..."
 		LIST=$($GREP -i "patch"[0-9]":" "$specfile"|$GREP -v ^'#'|$GREP -i -v ^http|$GREP -v \{|awk '{print $2}')
-		[ -z "$LIST" ] || \
-			for L in $LIST;do [ -f "$L" ] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied to $newDest: $L";done
+		LIST2=$($GREP -i "source"[0-9]":" "$specfile"|$GREP -v ^'#'|$GREP -i -v ^http|$GREP -v \{|awk '{print $2}')
+		[ -z "$LIST" ] || tui-cp $LIST "$newDest"
+		[ -z "$LIST2" ] || tui-cp $LIST2 "$newDest"
+		
+		#[ -z "$LIST" ] || for L in $LIST;do [ -f "$L" ] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied to $newDest: $L";done
 
-		LIST=$($GREP -i "source"[0-9]":" "$specfile"|$GREP -v ^'#'|$GREP -i -v ^http|$GREP -v \{|awk '{print $2}')
-		[ ! -z "$LIST" ] && \
-			for L in $LIST;do [ -f "$L" ] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied to $newDest: $L";done
+		
+		#[ ! -z "$LIST" ] && \
+		#	for L in $LIST;do [ -f "$L" ] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied to $newDest: $L";done
+		
 		# We are in $prj_path, and remote only projects are substored in $prj_name
 	#	[ ! -z "$LIST" ] && \
 	#		tui-log $optVerb -t "$LOG" "Generated remoteOnly LIST=$LIST"
@@ -172,10 +176,13 @@
 	
 	# Make the tarball
 	tui-tar "$prj_name"
+	TARBALL="$prj_name-$VER.$TAR_EXT"
 	mv "$prj_name.$TAR_EXT" "$DEST/SOURCES/$TARBALL" && \
 		msg="Moved $TARBALL to $DEST/SOURCES/$TARBALL" || \
 		msg="Failed to move / Could not find: $TARBAL"
+	
 	tui-log $optVerb -t "$LOG" "$msg"
+	
 	# Execute the command
 	cd "$prj_path"
 	tui-log $optVerb -t "$LOG" "Changed from $OLDPWD to $PWD"
@@ -204,6 +211,7 @@
 		tui-log $optVerb -t "$LOG" "Default: Use output path: $DEST"
 	fi
 	[ -d "$DEST" ] || mkdir -p "$DEST"
+	[ -d "$DEST" ]
 	tui-status $? "Found destination: $DEST" || exit
 	
 	TMP="$TUI_TEMP_DIR/$prj_name.info"
@@ -226,38 +234,39 @@
 			then	[ ! "/" = "${line:0:1}" ] && line="/$line"
 				[ -f "$line" ] && \
 					lf="$(basename $line)" && \
-						cp "$line" "$DEST"/ && \
+						tui-cp "$line" "$DEST" && \
 						msg="Successfully copied" || \
 						msg="Failed to copy"
 				tui-status $? "* Copied" "$lf" 
 				tui-log -t "$LOG" "$msg $DEST/$lf"
 			fi
-		done 
+		done
+		[ -z "$LIST" ] || tui-cp "$line" "$DEST"
 		cd "$OLDPWD"
 		tui-log $optVerb -t "$LOG" "End parsing: $TMP"
 	else	/usr/share/dev-scripts/menu/prj/rpm/list $LBL "$TMP"
 		#ds prj rpm list $LBL "$TMP"
 		echo "" >> "$TMP"
 		# Copy all the files
-		while read line;do ## for line in $(cat "$TMP");do
-			if [ ! -z "$line" ]
-			then	[ ! "/" = "${line:0:1}" ] && line="/$line"
-				[ -f "$line" ] && \
-					cp "$line" "$DEST"/ && \
-						msg="Successfully copied" || \
-						msg="Failed to copy"
-				tui-status $? "* Copied" "$(basename $line)" 
-				tui-log -t "$LOG" "$msg $(basename $line)"
-			fi
-		done <"$TMP"
+	#	while read line;do ## for line in $(cat "$TMP");do
+	#		if [ ! -z "$line" ]
+	#		then	[ ! "/" = "${line:0:1}" ] && line="/$line"
+	#			[ -f "$line" ] && \
+	#				cp "$line" "$DEST"/ && \
+	#					msg="Successfully copied" || \
+	#					msg="Failed to copy"
+	#			tui-status $? "* Copied" "$(basename $line)" 
+	#			tui-log -t "$LOG" "$msg $(basename $line)"
+	#		fi
+	#	done <"$TMP"
+		tui-cp $(cat "$TMP") "$DEST"
 	fi
 	rm -fr "$TMP"
 	
 	# Copy the last files
-	cp "$rpm_builddir/SOURCES/$TARBALL" "$DEST"
-	tui-status $? "* Copied" "$(basename $TARBALL)"
-	cp "$specfile" "$DEST"
-	tui-status $? "* Copied" "$(basename $specfile)"
+	tui-cp "$specfile" "$rpm_builddir/SOURCES/$TARBALL" "$DEST"
+	#cp  "$DEST"
+	#tui-status $? "* Copied" "$(basename $specfile)"
 	
 	# Increase build number if built was successfull
 	if [ 0 -eq $RET ]
