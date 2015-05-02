@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
-# Copyright (c) 2014 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
+# Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
 # All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify it
@@ -24,8 +24,8 @@
 #	Contact:	erat.simon@gmail.com
 #	License:	GNU General Public License (GPL)
 #	Created:	2014.09.13
-#	Changed:	2014.12.30
-	script_version=0.5
+#	Changed:	2015.05.01
+	script_version=0.6
 	TITLE="$OA_TITLE - Setup"
 #	Description:	Set up the project main settings
 #			
@@ -42,6 +42,7 @@
 #
 #	Help text
 #
+	echo "$# : $@"
 	this_dir="$CONFIG_DIR/gitinfo"
 	write_git_info() { #
 	#
