@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.2
+	script_version=0.4
 #
 #	Title
 #
@@ -30,16 +30,17 @@
 #	Variables
 #
 	if [ -z "$4" ] # || [[ ! -z "$LBL" ]]
-	then	if [ -d "$DIR_CFG/$1" ]
+	then	# Its not called like: ds prj rpm make LBL, but ./make [LBL]
+		if [ -d "$DIR_CFG/$1" ] && [ ! -z "$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
-			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
+			LBL=$(tui-select $($LS "$DIR_CFG"))
 		fi
 	else	LBL="$4"
 	fi
+	source "$CONF_RPM"
 	source "$DIR_CFG/$LBL/$LBL.conf"
 	source "$DIR_CFG/$LBL/rpm.conf"
-	source "$CONF_RPM"
 #
 #	Display
 #

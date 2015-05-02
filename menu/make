@@ -29,7 +29,8 @@
 	LBL=""
 	VERBOSE=""
 	ARGS=""
-	script_version=0.5.3
+	script_version=0.5.4
+	hadOpts=false
 	while getopts "v36hsio" opts
 	do 	case $opts in
 		#v)	VERBOSE="-v"	;;
@@ -45,69 +46,75 @@ Where options are:
 " 
 			exit 0
 			;;
-		*)	ARGS+=" -$opts"	;;
+		*)	ARGS+=" -$opts"
+			hadOpts=true	;;
 		esac
 	done
 	#[[ -z "$ARGS" ]] || ARGS="-$ARGS"
-	shift $(($OPTIND - 1))
-	[ -z "$1" ] && LBL="" || LBL="$1"
-	[ -z "$LBL" ] || str=" ($LBL)"
-	TASK_LIST=$(cd /usr/share/dev-scripts/menu/prj;ls -l|grep ^d|awk '{print $9}'|sed s,ks,livecd,g)	#|grep -v git
-	LIST=""
-#
-#	Display & Action
-#
-	tui-title "Make all project tasks$str ($script_version)"
-	if [ -z "$LBL" ]
-	then	tui-echo "Please select a project to make:"
-		#select LBL in $(cd "$DIR_CFG";ls);do break;done
-		LBL=$(tui-select $(cd "$DIR_CFG";ls))
-		tui-status $? "Selected: $LBL" || exit $?
-	fi
-	old="$(pwd)"
-	cur="$DIR_CFG/$LBL"
-	source "$cur/$LBL.conf"
-	cd "$cur"
-	switchMock=false
-	for L in $TASK_LIST;do 
-		#echo $L
-		[ -f "$L.conf" ] && \
-			LIST+=" $L" && \
-			[ $L = mock ] && \
-			switchMock=true
-	done
-	#echo $LIST
-	
-	cd "$old"
-	
-	
-	for T in $LIST;do
-		cmd="$(pwd)/prj"
-		add=""
-		#tui-title "Task ($T) for '$LBL' with: $(echo $LIST)"
-#	set -x	
-		if $switchMock
-		then	case $T in
-			mock)	T=rpm
-				ARGS+=" -s"
-				. $cur/rpm.conf
-				tui-status 111 "MOCK: Its remote only, overwriting '$opt' with 'bs'"
-				;;
-			rpm)	T=mock
-				;;
-			esac
+	$hadOpts && shift $(($OPTIND - 1))
+# Do this for every passed label
+	#echo $@ ; exit
+	for lbl in "${@}"
+	do	[ -z "$lbl" ] && LBL="" || LBL="$lbl"
+		[ -z "$LBL" ] || str=" ($LBL)"
+		TASK_LIST=$(cd /usr/share/dev-scripts/menu/prj;ls -l|grep ^d|awk '{print $9}'|sed s,ks,livecd,g)	#|grep -v git
+		LIST=""
+	#
+	#	Display & Action
+	#
+		tui-title "Make all project tasks$str ($script_version)"
+		if [ -z "$LBL" ]
+		then	tui-echo "Please select a project to make:"
+			#select LBL in $(cd "$DIR_CFG";ls);do break;done
+			LBL=$(tui-select $(cd "$DIR_CFG";ls))
+			tui-status $? "Selected: $LBL" || exit $?
 		fi
-#	set +x
-		case $T in
-		mock|git|rpm)
-			add="/$T/make"		;;
-		livecd)	add="/ks/make" 		;;
-		*)	tui-status $RET_TODO "TODO: $T"	;;
-	#	ks)	tui-echo "TODO: $T"
-	#		;;	
-		esac
-		
-		#echo $cmd$add $ARGS
-		[ -z "$add" ] || $cmd$add $VERBOSE $ARGS $LBL
-		#[ -z "$add" ] || $cmd$add $LBL $VERBOSE
+		old="$(pwd)"
+		cur="$DIR_CFG/$LBL"
+		source "$cur/$LBL.conf"
+		cd "$cur"
+		switchMock=false
+		for L in $TASK_LIST;do 
+			#echo $L
+			[ -f "$L.conf" ] && \
+				LIST+=" $L" && \
+				[ $L = mock ] && \
+				switchMock=true
+		done
+		#echo $LIST
+
+		cd "$old"
+
+
+		for T in $LIST;do
+			cmd="$(pwd)/prj"
+			add=""
+			#tui-title "Task ($T) for '$LBL' with: $(echo $LIST)"
+	#	set -x	
+			if $switchMock
+			then	case $T in
+				mock)	T=rpm
+					ARGS+=" -s"
+					. $cur/rpm.conf
+					tui-status 111 "MOCK: Its remote only, overwriting '$opt' with 'bs'"
+					;;
+				rpm)	T=mock
+					;;
+				esac
+			fi
+	#	set +x
+			case $T in
+			mock|git|rpm)
+				add="/$T/make"		;;
+			livecd)	add="/ks/make" 		;;
+			*)	tui-status $RET_TODO "TODO: $T"	;;
+		#	ks)	tui-echo "TODO: $T"
+		#		;;	
+			esac
+
+			#echo $cmd$add $ARGS
+			[ -z "$add" ] || $cmd$add $VERBOSE $ARGS $LBL
+			#[ -z "$add" ] || $cmd$add $LBL $VERBOSE
+		done
+	# All passed args have been handled
 	done

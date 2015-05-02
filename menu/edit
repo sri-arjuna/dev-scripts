@@ -24,23 +24,30 @@
 #
 #	Title
 #
-	title="$OA_TITLE - GIT Handler - Edit Config"
+	title="$OA_TITLE - GIT Handler - Edit default config"
 	tui-title "$title ($script_version)"
-	[[ -f "$CONF_GIT" ]] || \
+	[ -f "$CONF_GIT" ] || \
 		(tui-wait 5s "Please take care to provide all required data...";ds setup)
 	source "$CONF_GIT" || exit 1
 #
 #	Variables
 #
-	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
-	then	if [[ -d "$DIR_CFG/$1" ]]
+	#sublevel=2
+	#if [ 
+	if [ -z "$4" ] # || [[ ! -z "$LBL" ]]
+	then	if [ -d "$DIR_CFG/$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
 			select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
 		fi
 	else	LBL="$4"
 	fi
-	source "$CONF_GIT"
-	source "$DIR_CFG/$LBL/$LBL.conf"
-	source "$DIR_CFG/$LBL/git.conf" || exit 1
-	tui-edit "$prj_path/.git/config" "$DIR_CFG/$LBL/git.conf"
+	for s in "$DIR_CFG/$LBL"/*.conf
+	do	source "$s"
+	done
+	list=""
+	[ -f "$prj_path/.git/config" ] && list+=" "\$prj_path/.git/config"\"
+	[ -z "$specfile" ] || list+=" "\$specfile"\"
+	[ -z "$kickstart" ] || list+=" "\$kickstart"\"
+	
+	tui-edit $list

@@ -35,38 +35,47 @@
 #
 #	Variables
 #
-	case $# in
-	5)	shift 3 ;;
-	esac
+	sublevel=3
+	if [ $# -ge $sublevel ]
+	then	[ ! prj = "$1" ] && shift $(( $sublevel - 1 ))
+	fi
 	
-	LOG=$LOG_RPM
+	
+	LOG="$LOG_RPM"
 	beVerbose=false
 	NONVERBOSE="--quiet"
 	doSource=false
 	doInstall=false
 	doOpen=false
 	optVerb=""
+	hadOpts=false
+	OPTIND=0
 	while getopts "viso" opts
 	do 	case $opts in
 		v)	beVerbose=true
 			NONVERBOSE=""
-			optVerb="-v"
+			optVerb="-v"	
+			hadOpts=true
 			;;
-		s)	doSource=true
+		s)	doSource=true	
+			hadOpts=true
 			;;
-		i)	doInstall=true
+		i)	doInstall=true	
+			hadOpts=true
 			;;
-		o)	doOpen=true
+		o)	doOpen=true	
+			hadOpts=true
 			;;
 		esac
 	done
-	shift $(($OPTIND - 1))
+	$hadOpts && shift $(($OPTIND - 1))
 	
-	if [ -z "$4" ] # || [ ! -z "$LBL" ]
-	then	if [ -d "$DIR_CFG/$1" ] && [ ! -z "$1" ]
+	if [ -z "$4" ] # || [[ ! -z "$LBL" ]]
+	then	# Its not called like: ds prj rpm make LBL, but ./make [LBL]
+		if [ -d "$DIR_CFG/$1" ] && [ ! -z "$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
-			LBL=$(tui-select $(cd "$DIR_CFG";ls|$GREP -v [a-zA-Z]*\.))
+			LBL=$(tui-select $($LS "$DIR_CFG"))
 		fi
 	else	LBL="$4"
 	fi
@@ -154,15 +163,6 @@
 		[ -z "$LIST" ] || tui-cp $LIST "$newDest"
 		[ -z "$LIST2" ] || tui-cp $LIST2 "$newDest"
 		
-		#[ -z "$LIST" ] || for L in $LIST;do [ -f "$L" ] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied to $newDest: $L";done
-
-		
-		#[ ! -z "$LIST" ] && \
-		#	for L in $LIST;do [ -f "$L" ] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied to $newDest: $L";done
-		
-		# We are in $prj_path, and remote only projects are substored in $prj_name
-	#	[ ! -z "$LIST" ] && \
-	#		tui-log $optVerb -t "$LOG" "Generated remoteOnly LIST=$LIST"
 		if [ -d "$prj_name" ]
 		then	cd "$prj_name"
 		else	tui-log $optVerb -t "$LOG" "Code for $prj_name not retrieved yet."
@@ -289,9 +289,11 @@
 	then	list=$(cd "$DEST";ls -1tv --hide=*src.rpm --hide=*gz --hide=*debug* --hide=*spec|$GREP $prj_name)
 		for item in $list;do echo > /dev/zero ; done
 		cd "$DEST"
+		tui-log -t "$LOG" "Attempting to install: $item"
 		tui-bol-sudo && \
 			sudo tui-install "./$item" || \
 			su -c "tui-install ./$item"
+		tui-log -t "$LOG" "Install exited with: $?"
 		cd "$OLDPWD"
 	fi
 	

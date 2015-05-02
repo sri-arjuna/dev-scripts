@@ -30,14 +30,6 @@
 #	Variables
 #
 	. tui
-	#if [[ -z "$3" ]] # || [[ ! -z "$LBL" ]]
-	#then	if [[ -d "$DIR_CFG/$1" ]]
-	#	then	LBL="$1"
-	#	else	tui-echo "Please select the label to work with:"
-	#		select LBL in $(cd "$DIR_CFG";ls|grep -v \.);do break;done
-	#	fi
-	#else	LBL="$3"
-	#fi
 	if [ -z "$3" ] # || [ ! -z "$LBL" ]
 	then	if [ -d "$DIR_CFG/$1" ] && [ ! -z "$1" ]
 		then	LBL="$1"
@@ -50,19 +42,7 @@
 		tui-printf -S 1 "Something went wrong.. missing label..." && \
 		exit 1 || \
 		source "$DIR_CFG/$LBL/$LBL.conf"
-	cd "$DIR_CFG/$LBL"
-	LIST=$(ls|grep -v dev|grep conf)
 #
 #	Display
 #
-	show_menu=true
-	while $show_menu;do
-		tui-title "$prj_name"
-		tui-echo "Please select the config file to edit:"
-		this=$(tui-select Back $LIST)
-		case $this in
-		Back)	show_menu=false		;;
-		*)	tui-edit "$this"	;;
-		esac
-		#break
-	done
+	tui-edit cd "$DIR_CFG/$LBL"/*conf
