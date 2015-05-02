@@ -147,6 +147,10 @@
 	
 	prj_label=$(tui-read "What is the FSLABEL? ($prj_name):" )
 	[ -z "$prj_label" ] && prj_label="${prj_name/ /_}"
+	while [ ${#prj_labell} -gt 25 ]
+	do	tui-status 111 "Kernel info will be added, please keep the FSLABEL below 22 chars."	
+		prj_label=$(tui-read "What is the FSLABEL?")
+	done
 	
 	prj_title=$(tui-read "What is the TITLE? ($prj_name):")
 	[ -z "$prj_title" ] && prj_title="${prj_name/_/ }"

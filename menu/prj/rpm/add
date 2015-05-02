@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.5
+	script_version=0.5.1
 #
 #	Title
 #
@@ -29,7 +29,7 @@
 #
 #	Variables
 #
-	if [[ -z "$4" ]] # || [[ ! -z "$LBL" ]]
+	if [ -z "$4" ] # || [[ ! -z "$LBL" ]]
 	then	if [[ -d "$DIR_CFG/$1" ]]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
@@ -40,7 +40,7 @@
 	
 	oPWD="$(pwd)"
 	rpm_builddir=""
-	[[ -f "$CONF_RPM" ]] && source "$CONF_RPM"
+	[ -f "$CONF_RPM" ] && source "$CONF_RPM"
 	source "$DIR_CFG/$LBL/$LBL.conf" ; cd "$prj_path"
 	tConf="$DIR_CFG/$LBL/rpm.conf"
 #
@@ -54,7 +54,7 @@
 	specfile="$prj_path/$prj_name.spec"
 	rpmdev-newspec "$prj_name" > /dev/zero
 	RET=$?
-        [[ $RET -eq 2 ]] && RET=0
+        [ $RET -eq 2 ]] && RET=0
 	tui-status $RET "Created specfile ($specfile)"
 	tui-conf-set "$tConf" specfile "\$prj_path/\$prj_name.spec"
 	source "$tConf"
@@ -63,14 +63,12 @@
 	if $remoteOnly
 	then	tui-yesno "Will \"$prj_name\" be a 'noarch' project?" && \
 			opt=ba || opt=bs
-	else	select bOpt in all sources packages;do
+	else	bOpt=$(tui-select all sources packages)
 		case $bOpt in
 		all)		opt="ba"	;;
 		sources)	opt="bs"	;;
 		packages)	opt="bb"	;;
 		esac
-		break
-		done
 	fi
 	tui-conf-set "$tConf" opt "$opt"
 	
