@@ -121,26 +121,26 @@
 			fi
 			
 			cd "$rpm_builddir"
-			if tui-bol-sudo
-			then	$listSource && \
-					list=$(sudo find |$GREP "$prj_name"|$GREP \.rpm | $GREP \\.src\\. 2>/dev/zero) || \
-					list=$(sudo find |$GREP "$prj_name"|$GREP \.rpm  2>/dev/zero)
+			#if tui-bol-sudo
+			#then
+				$listSource && \
+					tui-asroot "find |$GREP \"$prj_name\"|$GREP \\.rpm | $GREP \\.src\\. 2>/dev/zero"
 				if [ -z "$list" ] 
 				then	cd "$DIR_OUT"
 					$listSource && \
-						list=$(sudo find |$GREP "$prj_name"|$GREP \.rpm | $GREP \.src\. 2>/dev/zero) || \
-						list=$(sudo find |$GREP "$prj_name"|$GREP \.rpm  2>/dev/zero)
+						tui-asroot "find |$GREP \"$prj_name\"|$GREP \\.rpm | $GREP \.src\. 2>/dev/zero" #) || \
+						#list=$(sudo find |$GREP "$prj_name"|$GREP \.rpm  2>/dev/zero)
 				fi
-			else	$listSource && \
-					list=$(su -c "find |$GREP $prj_name|$GREP \.rpm | $GREP \\.src\\. 2>/dev/zero") 2>/dev/zero || \
-					list=$(su -c "find |$GREP $prj_name|$GREP \.rpm 2>/dev/zero") 2>/dev/zero
-				if [ -z "$list" ] 
-				then	cd "$DIR_OUT"
-					$listSource && \
-						list=$(su -c "find |$GREP $prj_name|$GREP | $GREP \\.src\\. \.rpm 2>/dev/zero") 2>/dev/zero || \
-						list=$(su -c "find |$GREP $prj_name|$GREP \.rpm 2>/dev/zero") 2>/dev/zero
-				fi
-			fi
+			#else	$listSource && \
+			#		list=$(su -c "find |$GREP $prj_name|$GREP \.rpm | $GREP \\.src\\. 2>/dev/zero") 2>/dev/zero || \
+			#		list=$(su -c "find |$GREP $prj_name|$GREP \.rpm 2>/dev/zero") 2>/dev/zero
+			#	if [ -z "$list" ] 
+			#	then	cd "$DIR_OUT"
+			#		$listSource && \
+			#			list=$(su -c "find |$GREP $prj_name|$GREP | $GREP \\.src\\. \.rpm 2>/dev/zero") 2>/dev/zero || \
+			#			list=$(su -c "find |$GREP $prj_name|$GREP \.rpm 2>/dev/zero") 2>/dev/zero
+			#	fi
+			#fi
 			
 			
 			

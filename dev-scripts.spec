@@ -1,6 +1,6 @@
 Name:        dev-scripts
 Version:     0.3.6
-Release:     9%{?dist}
+Release:     54%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
@@ -10,22 +10,39 @@ Source0:     http://sea.fedorapeople.org/review/%{name}/%{name}-%{version}.tar.g
 
 BuildArch:   noarch
 
+# User Interface
 Requires:    tui
 # Live Image
-Requires:    spin-kickstarts
 Requires:    livecd-tools
+Requires:    spin-kickstarts
 Requires:    awesome-kickstarts
 # Developer
 Requires:    rpmdevtools
 Requires:    rpm-build
 Requires:    mock
-Requires:    html5-gen
 Requires:    createrepo
+Requires:    html5-gen
 # Code handling
+Requires:    hg
 Requires:    git
-Requires:    gcc
+Requires:    git2cl
+Requires:    svn
+# Compiling
 Requires:    auto-buildrequires
+Requires:    autoconf
+Requires:    automake
+Requires:    cpp
+Requires:    gcc
+Requires:    gcc-c++
+Requires:    cross-gcc-common
 Requires:    make
+Requires:    cmake
+Requires:    nasm
+Requires:    yasm
+Requires:    libtool
+Requires:    enca
+Requires:    help2man
+Requires:    texinfo
 
 	
 %description
@@ -47,11 +64,6 @@ A collection of scripts that aims to make a developers life easier
 
 %install
 rm -rf       %{buildroot}
-#rm %{name}/install.sh \
-#	%{name}/uninstall.sh \
-#	%{name}/README.md \
-#	%{name}/build-rpm-%{name}.sh \
-	#%{name}/%{name}.spec
 mkdir -p     %{buildroot}%{_bindir} \
              %{buildroot}%{_mandir}/man1 \
              %{buildroot}%{_datarootdir}/%{name} \
@@ -66,7 +78,7 @@ mv %{name}/%{name}_compl.bash %{buildroot}%{_sysconfdir}/bash_completion.d/
 # Last step
 mv %{name}/*            %{buildroot}%{_datarootdir}/%{name}/
 cd %{buildroot}
-ln -sf %{_datarootdir}/%{name}/ds.sh  %{buildroot}%{_bindir}/ds 
+ln -sf %{_datarootdir}/%{name}/bin/ds.sh  %{buildroot}%{_bindir}/ds 
 
 %clean
 rm -rf %{buildroot}
@@ -81,6 +93,14 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat May 02 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.7
+- Updated:     ds make, now accepts multiple projects
+- Fixed:       ds prj add git|rpm|mock
+-              remaining error is caused by tui-conf-set
+- Fixed:       ds prj {ks,rpm} add, no more display error
+- Changed:     Setup style, moved ssh to setup
+- Changed:     Bin and Docs in subdirs now for packaging
+
 * Wed Mar 18 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.6
 - Added:      ds prj git clone|commit|config|status
 

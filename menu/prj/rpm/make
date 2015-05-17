@@ -20,12 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	source /etc/tui/tui.conf
-	source /etc/tui/commands.conf
-	source /etc/tui/apps.conf || \
-	[ 0 -eq $UID ] || \
-		source $HOME/.config/tui/apps.conf
-		
+	. tui
 	script_version=0.8.9
 #
 #	Title
@@ -83,7 +78,7 @@
 	source "$CONF_RPM"
 	source "$DIR_CFG/$LBL/$LBL.conf"
 	source "$DIR_CFG/$LBL/rpm.conf"
-	touch "$TUI_TEMP_FILE"
+	touch "$TUI_FILE_TEMP"
 	$doSource && opt=bs
 	OPTS="-$opt"
 	if [ -z "$specfile" ]
@@ -171,10 +166,11 @@
 		#tui-log $optVerb -t "$LOG" "Changed from $OLDPWD (remoteOnly part) to $PWD"
 	fi
 	
-	cd ..
+	cd "$prj_path/.."
 	tui-log $optVerb -t "$LOG" "Changed from $OLDPWD to $PWD"
 	
 	# Make the tarball
+	[ ! "" = "$($LS|$GREP \.tar\.)" ] && rm *.tar.*
 	tui-tar "$prj_name"
 	TARBALL="$prj_name-$VER.$TAR_EXT"
 	mv "$prj_name.$TAR_EXT" "$DEST/SOURCES/$TARBALL" && \
@@ -190,10 +186,10 @@
 	then	tui-log -vt "$LOG" "Start building verbose: rpmbuild $OPTS \"$specfile\""
 		rpmbuild $OPTS "$specfile"
 		RET=$?
-	else	touch "$TUI_TEMP_FILE"
-		echo "rpmbuild $OPTS $NONVERBOSE \"$specfile\" 1>>$LOG 2>>$LOG" > "$TUI_TEMP_FILE"
+	else	touch "$TUI_FILE_TEMP"
+		echo "rpmbuild $OPTS $NONVERBOSE \"$specfile\" 1>>$LOG 2>>$LOG" > "$TUI_FILE_TEMP"
 		tui-log $optVerb -t "$LOG" "Start building silent: rpmbuild $OPTS $NONVERBOSE \"$specfile\""
-		tui-bgjob "$TUI_TEMP_FILE" "Building package: \"$prj_name\"..." "Built package: \"$prj_name\"."
+		tui-bgjob "$TUI_FILE_TEMP" "Building package: \"$prj_name\"..." "Built package: \"$prj_name\"."
 		RET=$?
 	fi
 	[ 0 -eq $RET ] && \
@@ -202,7 +198,7 @@
 	tui-log $optVerb -t "$LOG" "Build end: $word"
 	
 	# Optional task (fas)
-	if $useFAS && [ 0 -eq $RET ]
+	if $useFAS && [ 0 -eq $RET ] && [ -f "HOME/.config/fas/fas.conf" ]
 	then	source $HOME/.config/fas/fas.conf
 		DEST="$FAS_REVIEW/$prj_name"
 		tui-log $optVerb -t "$LOG" "FAS: Set output path: $DEST"
@@ -214,10 +210,10 @@
 	[ -d "$DEST" ]
 	tui-status $? "Found destination: $DEST" || exit
 	
-	TMP="$TUI_TEMP_DIR/$prj_name.info"
-	tui-bol-dir "$TUI_TEMP_DIR" > /dev/zero
+	TMP="$TUI_DIR_CACHE/$prj_name.info"
+	tui-bol-dir "$TUI_DIR_CACHE" > /dev/zero
 	touch "$TMP"
-	/usr/share/dev-scripts/menu/prj/rpm/list $LBL "$TMP"
+	$DS_DIR_MENU/prj/rpm/list $LBL "$TMP"
 	#ds prj rpm list $LBL "$TMP"
 	echo "" >> "$TMP"
 	
@@ -244,7 +240,7 @@
 		[ -z "$LIST" ] || tui-cp "$line" "$DEST"
 		cd "$OLDPWD"
 		tui-log $optVerb -t "$LOG" "End parsing: $TMP"
-	else	/usr/share/dev-scripts/menu/prj/rpm/list $LBL "$TMP"
+	else	$DS_DIR_MENU/prj/rpm/list $LBL "$TMP"
 		#ds prj rpm list $LBL "$TMP"
 		echo "" >> "$TMP"
 		# Copy all the files
@@ -290,10 +286,9 @@
 		for item in $list;do echo > /dev/zero ; done
 		cd "$DEST"
 		tui-log -t "$LOG" "Attempting to install: $item"
-		tui-bol-sudo && \
-			sudo tui-install "./$item" || \
-			su -c "tui-install ./$item"
-		tui-log -t "$LOG" "Install exited with: $?"
+		tui-asroot tui-install "./$item"
+		RET=$?
+		tui-log -t "$LOG" "Install exited with: $RET"
 		cd "$OLDPWD"
 	fi
 	

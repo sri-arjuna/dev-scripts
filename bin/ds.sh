@@ -25,13 +25,20 @@
 #
 #	Variables
 #
+	. tui
 	TITLE="Developer Scripts"
 	APP=dev-scripts
 	VERSION="0.3.5"
-	DIR=/usr/share/$APP
-	config="$HOME/.config/$APP/$APP.conf"
-	readonly ds_oPWD="$(pwd)"
-	export ds_oPWD
+	# Dirs
+	DS_DIR_INSTALLED="${DS_DIR_INSTALLED:-/usr/share/$APP}"
+	DS_DIR_CONFIG="${XDG_CONFIG_DIR:-$HOME/.config}/$APP"
+	DS_DIR_ORG="$PWD"
+	DS_DIR_MENU="$DS_DIR_INSTALLED/menu"
+	DS_DIR_INCL="$DS_DIR_INSTALLED/incl"
+	# Files
+	DS_FILE_CONF="$DS_DIR_CONFIG/$APP.conf"
+	# Export them
+	export DS_DIR_CONFIG DS_DIR_MENU DS_DIR_INCL DS_DIR_ORG DS_FILE_CONF
 #
 #	Catch help
 #
@@ -61,7 +68,7 @@ For more details, see either one of:
 	tui-browser 	-T "$TITLE" \
 			-D Section \
 			-F Commands \
-			-p "$DIR/menu" \
-			-c "$config" \
-			-s "$DIR/incl" \
+			-c "$DS_FILE_CONF" \
+			-s "$DS_DIR_INCL" \
+			-p "$DS_DIR_MENU" \
 			"${@}"

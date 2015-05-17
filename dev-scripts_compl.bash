@@ -27,6 +27,9 @@ _dev-scripts_module()
 		""|[a-zA-Z]*)	COMPREPLY=( $( compgen -W "$(cd $DIR 2>/dev/null && echo $cur*)" -- "$cur" ) ) 
 				return 0
 				;;
+		setup)	COMPREPLY=( $(compgen -W "ds git ks mock rpm ssh" -- $cur) )
+			return 0
+			;;
 		esac
 		;;
 	esac
@@ -115,6 +118,9 @@ _dev-scripts_module()
 			;;
 		new)
 			COMPREPLY=( $(compgen -W "manpage" -- $cur) )
+			return 0
+			;;
+		setup)	COMPREPLY=( $(compgen -W "ds git ks mock rpm ssh" -- $cur) )
 			return 0
 			;;
 		ds)
