@@ -20,11 +20,11 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.4
+	script_version=0.1
 #
 #	Title
 #
-	title="$OA_TITLE - Edit - Project Files"
+	title="$OA_TITLE - Open - Project Path"
 	tui-title "$title ($script_version)"
 	[ -f "$CONF_GIT" ] || \
 		(tui-wait 5s "Please take care to provide all required data...";ds setup)
@@ -32,8 +32,9 @@
 #
 #	Variables
 #
-	# Get the label
-	if [ -z "$4" ]
+	#sublevel=2
+	#if [ 
+	if [ -z "$4" ] # || [[ ! -z "$LBL" ]]
 	then	if [ -d "$DIR_CFG/$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
@@ -41,22 +42,6 @@
 		fi
 	else	LBL="$4"
 	fi
+	source "$DIR_CFG/$LBL/$LBL.conf"
 	
-	# Reset and load variables
-	specfile=""
-	kickstart=""
-	prj_path=""
-	for s in "$DIR_CFG/$LBL"/*.conf
-	do	source "$s"
-	done
-#
-#	Action & Display
-#
-	# Which files to edit
-	list=""
-	[ -f "$prj_path/.git/config" ] && list+=" $prj_path/.git/config"
-	[ -z "$specfile" ] || list+=" $specfile"
-	[ -z "$kickstart" ] || list+=" $kickstart"
-	
-	# Edit the files
-	tui-edit $list &
+	tui-filemgr "$prj_path" &

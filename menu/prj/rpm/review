@@ -31,7 +31,7 @@
 #
 #	Variables
 #
-	TMP="$TUI_TEMP_FILE"
+	TMP="$TUI_FILE_TEMP"
 	YES=false
 	while getopts y opt
 	do	case $opt in

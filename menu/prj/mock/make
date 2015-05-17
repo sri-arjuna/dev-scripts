@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 #
 # Copyright (c) 2014-2015 by Simon Arjuna Erat (sea)  <erat.simon@gmail.com>
@@ -21,12 +21,7 @@
 #
 #	Variables
 #
-	source /etc/tui/tui.conf
-	source /etc/tui/commands.conf
-	source /etc/os-release
-	source /etc/tui/apps.conf #|| \
-	[ 0 -ne $UID ] || \
-		source $HOME/.config/tui/apps.conf
+	. tui
 	script_version=0.7.9
 	TOTAL_RET=0
 	TOTAL_COUNT=0
@@ -75,7 +70,7 @@
 	fi
 	source "$CONF_MOCK"
 	source "$DIR_CFG/$LBL/mock.conf"
-	touch "$TUI_TEMP_FILE"
+	touch "$TUI_FILE_TEMP"
 	OPTS="-$opt"
 	tui-log -e "$LOG" ""
 	tui-log -t "$LOG" "Loaded project: $prj_name ($LBL)"
@@ -115,13 +110,13 @@
 				"$(dirname $dir_out)"  || \
 			dir_out="$DIR_OUT/$dist"
 	fi
-	tui-bol-dir "$dir_out"
+	tui-bol-dir -v "$dir_out"
 #
 #	Source RPM
 #
 	# Was built by 'rpm'
 	# now looking for the latest...
-	[ -z "$TUI_TEMP_DIR" ] && exit 1
+	[ -z "$TUI_DIR_CACHE" ] && exit 1
 	#list=$(find | $GREP -e $prj_name -e $VER | $GREP \.src\.rpm$)
 	cd "$dir_out" && \
 		list=$(ls -1tv *src.rpm) && \
@@ -144,9 +139,9 @@
 				T="$dist-$R-$A"
 				if [ -f "/etc/mock/$T.cfg" ]
 				then	TASKS+=" $prj_name-$T"
-					echo "mock --target=$A -r $T $SRC 1>/dev/zero 2>>$LOG_MOCK " > "$TUI_TEMP_DIR/$prj_name-$T"
-					#echo "[ 0 -eq \$? ] && msg=\"Successfully built\" || msg=\"Failed to build\"" >> "$TUI_TEMP_DIR/$prj_name-$T"
-					#echo "tui-log -t \"$LOG\" \"\$msg $prj_name-$T\"" >> "$TUI_TEMP_DIR/$prj_name-$T"
+					echo "mock --target=$A -r $T $SRC 1>/dev/zero 2>>$LOG_MOCK " > "$TUI_DIR_CACHE/$prj_name-$T"
+					#echo "[ 0 -eq \$? ] && msg=\"Successfully built\" || msg=\"Failed to build\"" >> "$TUI_DIR_CACHE/$prj_name-$T"
+					#echo "tui-log -t \"$LOG\" \"\$msg $prj_name-$T\"" >> "$TUI_DIR_CACHE/$prj_name-$T"
 					CHECK=$(($CHECK + 1))
 				else	tui-printf -rS 4 "Configuration for task \"$T\" does not exist."
 					TOTAL_SKIP=$(( $TOTAL_SKIP + 1 ))
@@ -162,10 +157,10 @@
 	then	RET=0
 		for T in $TASKS;do
 			echo "" >> $LOG_MOCK
-			cat "$TUI_TEMP_DIR/$T" >> $LOG_MOCK
+			cat "$TUI_DIR_CACHE/$T" >> $LOG_MOCK
 			tui-log -t "$LOG" "Start building package for $T"
-			sudo tui-bgjob "$TUI_TEMP_DIR/$T" "Packaging $T" "Packaged $T" && \
-				rm "$TUI_TEMP_DIR/$T" && RET=$(($RET + 1))
+			sudo tui-bgjob "$TUI_DIR_CACHE/$T" "Packaging $T" "Packaged $T" && \
+				rm "$TUI_DIR_CACHE/$T" && RET=$(($RET + 1))
 			RET=$?
 			# 
 			[ 0 -ne $RET ] && \
@@ -177,10 +172,10 @@
 			TOTAL_COUNT=$(( $TOTAL_COUNT + 1 ))
 		done
 	else	# REQUIRES ROOT, NO SUDO AVAILABLE
-		cat > $TUI_TEMP_FILE << EOF
+		cat > $TUI_FILE_TEMP << EOF
 for T in $TASKS;do
-	cat $TUI_TEMP_DIR/\$T >> $LOG_MOCK
-	tui-bgjob "\$TUI_TEMP_DIR/\$T" "Packaging \$T" "Packaged \$T" && rm $TUI_TEMP_DIR/\$T
+	cat $TUI_DIR_CACHE/\$T >> $LOG_MOCK
+	tui-bgjob "\$TUI_DIR_CACHE/\$T" "Packaging \$T" "Packaged \$T" && rm $TUI_DIR_CACHE/\$T
 	[ 0 -ne \$? ] && \\
 			TOTAL_RET=$(( \$TOTAL_RET + 1 )) && \\
 			tui-filemgr /var/lib/mock/\$T/result
@@ -189,8 +184,8 @@ done
 export TOTAL_RET TOTAL_COUNT
 EOF
 		tui-echo "Please provide root password:"
-		su -c "sh $TUI_TEMP_FILE ; echo \$? > $TUI_TEMP_FILE"
-		RET=$(cat $TUI_TEMP_FILE)
+		su -c "sh $TUI_FILE_TEMP ; echo \$? > $TUI_FILE_TEMP"
+		RET=$(cat $TUI_FILE_TEMP)
 	fi
 #
 #	Moving files
