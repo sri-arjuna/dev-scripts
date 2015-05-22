@@ -20,6 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
+	#set -x
 	. tui
 	script_version=0.8.9
 #
@@ -137,12 +138,12 @@
 	cd "$prj_path"
 	tui-log $optVerb -t "$LOG" "Changed from $OLDPWD to $PWD"
 	LIST=$($GREP -i "patch"[0-9]":" "$specfile"|$GREP -v ^'#'|$GREP -i -v ^http|$GREP -v \{|awk '{print $2}')
-	tui-log $optVerb -t "$LOG" "Found ${#LIST[@]} patch entries: ${LIST[@]}"
+	tui-log $optVerb -t "$LOG" "Found $(( ${#LIST[@]} - 1 )) patch entries: ${LIST[@]}"
 	[ -z "$LIST" ] || \
 		for L in $LIST;do [ -f "$L" ] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied to $newDest: $L";done
 	
 	LIST=$($GREP -i "source"[0-9]":" "$specfile"|$GREP -v ^'#'|$GREP -i -v ^http|$GREP -v \{|awk '{print $2}')
-	tui-log $optVerb -t "$LOG" "Found ${#LIST[@]} source entries: ${LIST[@]}"
+	tui-log $optVerb -t "$LOG" "Found $(( ${#LIST[@]} - 1 )) source entries: ${LIST[@]}"
 	[ ! -z "$LIST" ] && \
 		for L in $LIST;do [ -f "$L" ] && tui-status -r 2 "Copy $L..." ;cp "$L" "$newDest/";tui-status $? "Copied to $newDest: $L";done
 	
@@ -170,14 +171,15 @@
 	tui-log $optVerb -t "$LOG" "Changed from $OLDPWD to $PWD"
 	
 	# Make the tarball
-	[ ! "" = "$($LS|$GREP \.tar\.)" ] && rm *.tar.*
+	[ ! "" = "$($LS|$GREP '.tar.')" ] && rm *\.tar\.*
 	tui-tar "$prj_name"
 	TARBALL="$prj_name-$VER.$TAR_EXT"
 	mv "$prj_name.$TAR_EXT" "$DEST/SOURCES/$TARBALL" && \
 		msg="Moved $TARBALL to $DEST/SOURCES/$TARBALL" || \
 		msg="Failed to move / Could not find: $TARBAL"
-	
-	tui-log $optVerb -t "$LOG" "$msg"
+	tui-status $? "$msg"
+	# $tui-log $optVerb -t "$LOG" "$msg"
+	tui-log -t "$LOG" "$msg"
 	
 	# Execute the command
 	cd "$prj_path"
@@ -186,8 +188,7 @@
 	then	tui-log -vt "$LOG" "Start building verbose: rpmbuild $OPTS \"$specfile\""
 		rpmbuild $OPTS "$specfile"
 		RET=$?
-	else	touch "$TUI_FILE_TEMP"
-		echo "rpmbuild $OPTS $NONVERBOSE \"$specfile\" 1>>$LOG 2>>$LOG" > "$TUI_FILE_TEMP"
+	else	echo "rpmbuild $OPTS $NONVERBOSE \"$specfile\" 1>>$LOG 2>>$LOG" > "$TUI_FILE_TEMP"
 		tui-log $optVerb -t "$LOG" "Start building silent: rpmbuild $OPTS $NONVERBOSE \"$specfile\""
 		tui-bgjob "$TUI_FILE_TEMP" "Building package: \"$prj_name\"..." "Built package: \"$prj_name\"."
 		RET=$?
@@ -210,6 +211,7 @@
 	[ -d "$DEST" ]
 	tui-status $? "Found destination: $DEST" || exit
 	
+	rm -f "$TMP"
 	TMP="$TUI_DIR_CACHE/$prj_name.info"
 	tui-bol-dir "$TUI_DIR_CACHE" > /dev/zero
 	touch "$TMP"
@@ -218,12 +220,12 @@
 	echo "" >> "$TMP"
 	
 	if $remoteOnly
-	then	/usr/share/dev-scripts/menu/prj/rpm/list -s $LBL "$TMP"
+	then	$DS_DIR_MENU/prj/rpm/list -s $LBL "$TMP"
 		#ds prj rpm list $LBL "$TMP"
 		# Just parse the source file
 		cd $rpm_builddir
 		. /etc/os-release
-		cp "$(find|$GREP \.src\.rpm$ |$GREP fc$VERSION_ID)" "$DEST" || exit 1
+		cp "$(find|$GREP \.src\.rpm$ |$GREP fc${VERSION_ID})" "$DEST" || exit 1
 		tui-log $optVerb -t "$LOG" "Start parsing: $TMP"
 		for line in $(grep "src.rpm" "$TMP");do
 			if [ ! -z "$line" ]

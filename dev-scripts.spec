@@ -1,6 +1,6 @@
 Name:        dev-scripts
-Version:     0.3.6
-Release:     54%{?dist}
+Version:     0.3.7
+Release:     0%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3
@@ -93,13 +93,14 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Sat May 02 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.7
+* Sat May 23 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.7
 - Updated:     ds make, now accepts multiple projects
 - Fixed:       ds prj add git|rpm|mock
 -              remaining error is caused by tui-conf-set
 - Fixed:       ds prj {ks,rpm} add, no more display error
 - Changed:     Setup style, moved ssh to setup
 - Changed:     Bin and Docs in subdirs now for packaging
+- Changed:     prj rpm list
 
 * Wed Mar 18 2015 - Simon A. Erat - erat.simon@gmail.com - 0.3.6
 - Added:      ds prj git clone|commit|config|status
