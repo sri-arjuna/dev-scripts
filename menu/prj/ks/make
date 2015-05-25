@@ -20,15 +20,13 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.7.5
+	. tui
+	script_version=0.8.0
 #
 #	Title
 #
 	title="$OA_TITLE - Kickstart - Make an iso image"
 	tui-title "$title ($script_version)"
-	source /etc/tui/status.conf
-	source /etc/tui/tui.conf
-	source /etc/tui/commands.conf
 #
 #	Variables
 #
@@ -90,6 +88,7 @@
 				ARCH=32
 		fi
 	fi
+set -x
 	tui-status 111 "Building \"$prj_label\" as $ARCH bit iso."
 	
 	# Automaticly generate identifier string as defined the the projects livecd.conf
@@ -130,9 +129,9 @@
 	#	cmd="sudo $PRE livecd-creator $NONVERBOSE -c \"$kickstart\" -t \"$prj_title\" -f \"$prj_label\" --releasever=$prj_release $cmd_tmpdir $verboseString && sudo $cmd_post" || \
 	#	cmd="su -c \"$PRE livecd-creator $NONVERBOSE -c \\\"$kickstart\\\" -t \\\"$prj_title\\\" -f \\\"$prj_label\\\" --releasever=$prj_release $cmd_tmpdir $verboseString && $cmd_post\""
 	# NEW
-	tui-bol-sudo && \
-		cmd="sudo $PRE livecd-creator $NONVERBOSE -c \"$kickstart\" -t \"$prj_title\" -f \"$prj_label\" --releasever=$prj_release $cmd_tmpdir $verboseString && sudo $cmd_post ; RET=\$? ; export RET" || \
-		cmd="tui-echo \"Please provide the root password:\";su -c \"$PRE livecd-creator $NONVERBOSE -c \\\"$kickstart\\\" -t \\\"$prj_title\\\" -f \\\"$prj_label\\\" --releasever=$prj_release $cmd_tmpdir $verboseString && $cmd_post; RET=\$?;export RET\""
+	echo "$PRE livecd-creator $NONVERBOSE -c \"$kickstart\" -t \"$prj_title\" -f \"$prj_label\" --releasever=$prj_release $cmd_tmpdir $verboseString && $cmd_post ; RET=\$? ; export RET" > "$TUI_FILE_TEMP"
+	tui-asroot "tui-bgjob $TUI_FILE_TEMP"
+	set +x
 		
 #set +x ; exit	
 	cd "$prj_path"
@@ -179,11 +178,9 @@
 	if [ ! -z "$prj_tempdir" ] 
 	then 	cd "$prj_tempdir"
 		tui-log $optVerb -t "$LOG" "Changed to: $prj_tempdir"
-		RET2=1
-		tui-bol-sudo && \
-			(sudo rm -fr * ; RET2=$? ; export RET2 ) || \
-			su -c "rm -fr * ; RET2=\$? ; export RET2"
-		tui-status $RET2 "Removed tempdirectories: $prj_tempdir"
+		echo "rm -fr \* ; RET2=\$? ; export RET2" > "$TUI_FILE_TEMP"
+		tui-asroot $SHELL "$TUI_FILE_TEMP"
+		tui-status ${RET2:-$?} "Removed tempdirectories: $prj_tempdir"
 	fi
 	cd "$oPWD"
 	exit $RET

@@ -287,6 +287,7 @@
 	then	list=$(cd "$DEST";ls -1tv --hide=*src.rpm --hide=*gz --hide=*debug* --hide=*spec|$GREP $prj_name)
 		for item in $list;do echo > /dev/zero ; done
 		cd "$DEST"
+		#cd "$(dirname $item)"
 		tui-log -t "$LOG" "Attempting to install: $item"
 		tui-asroot tui-install "./$item"
 		RET=$?
