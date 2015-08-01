@@ -88,9 +88,9 @@ EOF
 	[[ -f "$CONFIG" ]] || cat > "$CONFIG" << EOF
 # $ME configuration
 DIR_PRJS=\"\$HOME/Projects\"
-DIR_BASE=\"\$HOME/.config/dev-scripts\"
+DIR_BASE=\$HOME/.config/dev-scripts
 CONFIG=\"$DIR_BASE/dev-scripts.conf\"
-DIR_CFG=\"\$DIR_BASE/prjs\"
+DIR_CFG=\$DIR_BASE/prjs
 DIR_OUT=\"\$HOME/data/out\"
 EOF
 	source "$CONFIG"
