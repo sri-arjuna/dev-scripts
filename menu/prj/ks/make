@@ -20,8 +20,11 @@
 # ------------------------------------------------------------------------
 #
 #	
-	. tui
-	script_version=0.8.0
+	source "$HOME/.tui_rc" || . tui
+	for f in $TUI_FILE_{CONF,USER}_{APPS,COMMANDS,COLORS,SETTINGS,STATUS,SYSTEM}
+	do	[ -f "$f" ] && source "$f"
+	done
+	script_version=0.8.1
 #
 #	Title
 #
@@ -67,12 +70,12 @@
 
 	# Exit if no kickstart file was found
 	[ -f "$kickstart" ] ; tui-status $? "$kickstart exists" || exit 1
-#set -x	
+	
 	# Create STRING according to ARCH
 	[ -z "$arch_style" ] && \
 		arch_style=kernel && \
 		tui-conf-set "$DIR_CFG/$LBL/livecd.conf" arch_style $arch_style
-	
+	# O_verwrite V_ariable arch
 	if $ov
 	then	# User wants specific ARCH
 		$do32bit_ov && \
@@ -88,7 +91,7 @@
 				ARCH=32
 		fi
 	fi
-set -x
+
 	tui-status 111 "Building \"$prj_label\" as $ARCH bit iso."
 	
 	# Automaticly generate identifier string as defined the the projects livecd.conf
@@ -106,51 +109,44 @@ set -x
 	# Append the string to the label and title
 	prj_label+="_${ARCH}"
 	prj_title+=" (${ARCH})"
-	
 	# Generate the tempdir string
 	[ -z "$prj_tempdir" ] && \
 		prj_tempdir="/mnt/tmp/${prj_label}"
 	cmd_tmpdir="--tmpdir=\"$prj_tempdir/$prj_label\""
-	
+	# Prepare 'while & post' build actions
+	cmd_post="chown $USER:$USER ${prj_label}.iso"
 	$do32bit && \
 		PRE="setarch linux32" || \
 		PRE=""
-#
-#	Display
-#
-	cmd_post="chown $USER:$USER ${prj_label}.iso"
 	$beVerbose && \
 		verboseString="" || \
 		verboseString=" 2>>\"$LOG\" 1>>$LOG"
-		#verboseString="1>>$LOG 2>>\"$LOG\" > \"$TUI_FILE_TEMP\""
-	
-	# OLD
-	#sudo grep -q $USER /etc/sudoers && \
-	#	cmd="sudo $PRE livecd-creator $NONVERBOSE -c \"$kickstart\" -t \"$prj_title\" -f \"$prj_label\" --releasever=$prj_release $cmd_tmpdir $verboseString && sudo $cmd_post" || \
-	#	cmd="su -c \"$PRE livecd-creator $NONVERBOSE -c \\\"$kickstart\\\" -t \\\"$prj_title\\\" -f \\\"$prj_label\\\" --releasever=$prj_release $cmd_tmpdir $verboseString && $cmd_post\""
-	# NEW
-	echo "$PRE livecd-creator $NONVERBOSE -c \"$kickstart\" -t \"$prj_title\" -f \"$prj_label\" --releasever=$prj_release $cmd_tmpdir $verboseString && $cmd_post ; RET=\$? ; export RET" > "$TUI_FILE_TEMP"
-	tui-asroot "tui-bgjob $TUI_FILE_TEMP"
-	set +x
-		
-#set +x ; exit	
+	# Change to project path, so relative paths work
 	cd "$prj_path"
+	echo "tui-bol-dir -v \"$prj_tempdir\" ; $PRE livecd-creator $NONVERBOSE -c \"$kickstart\" -t \"$prj_title\" -f \"$prj_label\" --releasever=$prj_release $cmd_tmpdir $verboseString && $cmd_post ; RET=\$? ; export RET" > "$TUI_FILE_TEMP"
+#
+#	Display
+#
 	optVerb=""
+	RET=1
 	if $beVerbose
-	then	cmd="${cmd/$verboseString/}"
+	then	cmd=$(cat "$TUI_FILE_TEMP")
 		tui-echo "Executing:" "$cmd"
-		eval $cmd
+		tui-asroot $SHELL "$TUI_FILE_TEMP" && \
+			RET=0 || RET=1
 		optVerb="-v"
-		RET=$?
-	else	echo "$cmd" > "$TUI_FILE_TEMP.cmd"
-		echo "${cmd/$verboseString/}" >> "$LOG"
-		tui-bgjob "$TUI_FILE_TEMP.cmd" "Building $prj_name ($prj_label.iso) live image...   (~30-60m)" "Built $prj_path/$prj_label.iso"
-		RET=$?
-		#echo $RET ; exit
+	else	printf "Command:\t" >> "$LOG"
+		cat "$TUI_FILE_TEMP" >> "$LOG"
+		#cat "$TUI_FILE_TEMP"
+		tui-asroot tui-bgjob "$TUI_FILE_TEMP" "Building $prj_name ($prj_label.iso) live image...   (~30-60m)" "Built $prj_path/$prj_label.iso" && \
+			RET=0 || RET=1
+		pwd
+		$LS | $GREP  iso$ 
 	fi
-		
-#set -x	
-	if [ 0 -eq $RET ]
+#	
+#	Post build tasks
+#
+	if [ 0 -eq $RET ] && [ -f "$prj_path/${prj_label}.iso" ]
 	then	# Its already been chown'ed
 		tui-log $optVerb -t "$LOG" "Build was successfull"
 		tui-bol-dir "$prj_outpath/" 1>/dev/zero 2>/dev/zero && \
@@ -161,26 +157,32 @@ set -x
 		if [ -f "$prj_path/${prj_label}.iso" ]
 		then	tui-log $optVerb -t "$LOG" "Found: $PWD/${prj_label}.iso"
 			target="$prj_outpath/${prj_label}.iso"
-			RET=1
-			if mv "$prj_path/${prj_label}.iso" "$target" 
+			if tui-cp "$prj_path/${prj_label}.iso" "$target" 
 			then 	tui-log $optVerb -t "$LOG" "Successfully moved to $target"
 				RET=0
 			else	tui-log $optVerb -t "$LOG" "Failed to move to $target"
+				RET=1
 			fi
-		else	tui-log $optVerb -t "$LOG" "NOT found: $parj_path/${prj_label}.iso"
+			tui-status $RET "Moved to $prj_outpath/" "$prj_label.iso"
 		fi
-		tui-status $? "Moved to $prj_outpath/" "$prj_label.iso"
-	elif [ false = $beVerbose ]
-	then	tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG"
+	else	[ false = $beVerbose ] && tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG"
 	fi
-	
+
 	# Clean up temporary data, specialy if it failed....
 	if [ ! -z "$prj_tempdir" ] 
-	then 	cd "$prj_tempdir"
-		tui-log $optVerb -t "$LOG" "Changed to: $prj_tempdir"
-		echo "rm -fr \* ; RET2=\$? ; export RET2" > "$TUI_FILE_TEMP"
-		tui-asroot $SHELL "$TUI_FILE_TEMP"
-		tui-status ${RET2:-$?} "Removed tempdirectories: $prj_tempdir"
+	then 	# If 'livecd_remove_tempdir' is found and is true,
+		# automaticly remove the temp files, otherwise
+		# ask the user wether to delete the tempfiles or not.
+		if ! ${livecd_remove_tempdir:-false} || tui-yesno "Delete all files in $$prj_tempdir?"
+		then	# Since forced recursive deleting is dangerous, make a failsafe catcher
+			# Of course this still requires that the user doesnt set $HOME as prj_tempdir...
+			cd "${prj_tempdir:-notfoundanythingitsempty}" || exit $RET
+			tui-log $optVerb -t "$LOG" "Changed to: $prj_tempdir"
+			echo "rm -fr \* ; RET2=\$? ; export RET2" > "$TUI_FILE_TEMP"
+			tui-log $optVerb -t "$LOG" "Removing all files in: $prj_tempdir"
+			tui-asroot $SHELL "$TUI_FILE_TEMP"
+			tui-status $? "Removed tempdirectories: $prj_tempdir"
+		fi
 	fi
 	cd "$oPWD"
 	exit $RET

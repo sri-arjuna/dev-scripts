@@ -1,6 +1,6 @@
 Name:        dev-scripts
 Version:     0.3.7
-Release:     8%{?dist}
+Release:     45%{?dist}
 Summary:     A collection of scripts for developers
 
 License:     GPLv3

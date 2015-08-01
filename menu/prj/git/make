@@ -20,13 +20,11 @@
 # ------------------------------------------------------------------------
 #
 #	
-	source /etc/tui/tui.conf
-	source /etc/tui/commands.conf
+	source "$HOME/.tui_rc" || . tui
+	for f in $TUI_FILE_{CONF,USER}_{APPS,COMMANDS,COLORS,SETTINGS,STATUS,SYSTEM}
+	do	[ -f "$f" ] && source "$f"
+	done
 	source /etc/os-release
-	source /etc/tui/apps.conf
-	[[ 0 -ne $UID ]] || \
-		source $HOME/.config/tui/apps.conf
-		
 	script_version=0.2
 #
 #	Title
@@ -58,7 +56,7 @@
 	then	if [[ -d "$DIR_CFG/$1" ]]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
-			select LBL in $(cd "$DIR_CFG";ls|$GREP -v \.);do break;done
+			LBL=$(tui-select $(cd "$DIR_CFG";ls|$GREP -v \.))
 		fi
 	else	LBL="$4"
 	fi
@@ -117,8 +115,10 @@
 					[[ -f "$tarball" ]] && rm -fr "$tarball"
 				esac
 			fi
-		else	tui-printf -S 111 "TODO no rpm package?"
-			tui-wait 5s "Please report if you see this message."
+		else	if [[ ! -f "$DIR_CFG/$LBL/livecd.conf" ]]
+			then	tui-printf -S 111 "TODO no rpm package?"
+				tui-wait 5s "Please report if you see this message."
+			fi
 		fi
 	else	tui-printf -S 4 "Skipping GIT, make it so!"
 	fi

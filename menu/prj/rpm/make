@@ -22,7 +22,7 @@
 #	
 	#set -x
 	. tui
-	script_version=0.8.9
+	script_version=0.8.10
 #
 #	Title
 #
@@ -80,6 +80,7 @@
 	source "$DIR_CFG/$LBL/$LBL.conf"
 	source "$DIR_CFG/$LBL/rpm.conf"
 	touch "$TUI_FILE_TEMP"
+	
 	$doSource && opt=bs
 	OPTS="-$opt"
 	if [ -z "$specfile" ]
@@ -171,7 +172,7 @@
 	tui-log $optVerb -t "$LOG" "Changed from $OLDPWD to $PWD"
 	
 	# Make the tarball
-	[ ! "" = "$($LS|$GREP '.tar.')" ] && rm *\.tar\.*
+	[ ! "" = "$($LS|$GREP '\.tar\.')" ] && rm *\.tar\.*
 	tui-tar "$prj_name"
 	TARBALL="$prj_name-$VER.$TAR_EXT"
 	mv "$prj_name.$TAR_EXT" "$DEST/SOURCES/$TARBALL" && \
@@ -199,7 +200,7 @@
 	tui-log $optVerb -t "$LOG" "Build end: $word"
 	
 	# Optional task (fas)
-	if $useFAS && [ 0 -eq $RET ] && [ -f "HOME/.config/fas/fas.conf" ]
+	if $useFAS && [ 0 -eq $RET ] && [ -f "$HOME/.config/fas/fas.conf" ]
 	then	source $HOME/.config/fas/fas.conf
 		DEST="$FAS_REVIEW/$prj_name"
 		tui-log $optVerb -t "$LOG" "FAS: Set output path: $DEST"
