@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 #	Description:	Generates a simple 'make-install' script 
 #			a basic FHS conform installation
@@ -33,7 +33,7 @@
 	APP=""
 	doRef=false
 	unset FHS
-	SOURCE="${script_name}.cfg"
+	SOURCE="$0.cfg"
 	declare -A FHS
 	index_list="prefix bindir sbindir sysconfdir datarootdir datadir docdir infodir man1dir man8dir compldir"
 	variable_list="";for i in $index_list;do variable_list+=" ${i^^}";done
@@ -117,13 +117,12 @@ There is NO WARRANTY, to the extent permitted by law.
 					fi
 					;;
 				COMPLDIR)
-					tr=${tr/\$\{APP\}/$APP}
+					tr="${tr/\$\{APP\}/$APP}"
 					echo "rm -f $DEST/${tr##*/}"
 					;;
 			#	INFODIR)
 			#		echo $content
 			#		;;
-				
 				*)	[ -d "$tr" ] && \
 						echo "rm -fr $DEST/${tr##*/}" || \
 						echo "rm -f $DEST/${tr##*/}"
@@ -135,14 +134,19 @@ There is NO WARRANTY, to the extent permitted by law.
 		write_distclean() { 
 		# Remove the files that where created
 		#
-			echo "(sleep 0.5 ; rm ./make-* ; rm ${APP}_ref.conf) &"
+			echo "(sleep 0.5 ; rm -f ./make-* ; rm -f $REFERENCE ) &"
 			#rm "./${script_name}.cfg"
 		}
 		
 		# Prepare script headers
 		for m in install uninstall distclean
 		do	echo "#!/bin/sh" > "make-$m"
-			[ ! "$m" = "distclean" ] && echo "[ \$UID -ne 0 ] && echo \"This script requires root access.\" && exit 99" >> "make-$m"
+			[ ! "$m" = "distclean" ] && \
+				printf '%s\n' \
+					"[ \$UID -ne 0 ] && \\" \
+					"	echo \"This script requires root access.\" && \\" \
+					"	exit 99" \
+					"set -x" >> "make-$m"
 			chmod +x "make-$m"
 		done
 		$doRef && >"$REFERENCE"
@@ -169,8 +173,16 @@ There is NO WARRANTY, to the extent permitted by law.
 		
 		# Finalize
 		write_distclean >> "make-distclean"
-		$doRef && echo "mkdir -p ${FHS[sysconfdir]} ; cp $REFERENCE ${FHS[sysconfdir]}" >> "make-install"
-		echo "echo \"Finished installation of $APP with exit code: \$? (0=success)\"" >> "make-install"
+		if $doRef 
+		then	echo "mkdir -p ${FHS[sysconfdir]} ; cp $REFERENCE ${FHS[sysconfdir]}/$APP.conf" >> "make-install"
+			echo "rm -f ${FHS[sysconfdir]}/$APP.conf" >> "make-uninstall"
+		fi
+		for m in install uninstall
+		do	printf '%s\n' \
+				"RET=\$?" \
+				"set +x" >> "make-$m"
+		done
+		echo "echo \"Finished installation of $APP with exit code: \$RET (0=success)\"" >> "make-install"
 	}
 #
 #	Get options
