@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	. tui
+	source /etc/tuirc && source "$HOME/.tuirc" || . tuirc
 	script_version=0.8
 #
 #	Title

@@ -21,7 +21,9 @@
 #
 #	
 	#set -x
-	. tui
+	. tuirc
+	#source /etc/tuirc && source "$HOME/.tuirc" && \
+	#	source "$TUI_FILE_CONF_COMMANDS" || . tuirc
 	script_version=0.8.10
 #
 #	Title
@@ -46,6 +48,7 @@
 	optVerb=""
 	hadOpts=false
 	OPTIND=0
+	useFAS=false
 	while getopts "viso" opts
 	do 	case $opts in
 		v)	beVerbose=true
@@ -80,7 +83,6 @@
 	source "$DIR_CFG/$LBL/$LBL.conf"
 	source "$DIR_CFG/$LBL/rpm.conf"
 	touch "$TUI_FILE_TEMP"
-	
 	$doSource && opt=bs
 	OPTS="-$opt"
 	if [ -z "$specfile" ]
@@ -177,7 +179,7 @@
 	TARBALL="$prj_name-$VER.$TAR_EXT"
 	mv "$prj_name.$TAR_EXT" "$DEST/SOURCES/$TARBALL" && \
 		msg="Moved $TARBALL to $DEST/SOURCES/$TARBALL" || \
-		msg="Failed to move / Could not find: $TARBAL"
+		msg="Failed to move / Could not find: $TARBALL"
 	tui-status $? "$msg"
 	# $tui-log $optVerb -t "$LOG" "$msg"
 	tui-log -t "$LOG" "$msg"
@@ -194,27 +196,33 @@
 		tui-bgjob "$TUI_FILE_TEMP" "Building package: \"$prj_name\"..." "Built package: \"$prj_name\"."
 		RET=$?
 	fi
-	[ 0 -eq $RET ] && \
+	[ 0 -eq "$RET" ] && \
 		word="Successfull" || \
 		word="Failed"
 	tui-log $optVerb -t "$LOG" "Build end: $word"
 	
 	# Optional task (fas)
-	if $useFAS && [ 0 -eq $RET ] && [ -f "$HOME/.config/fas/fas.conf" ]
-	then	source $HOME/.config/fas/fas.conf
-		DEST="$FAS_REVIEW/$prj_name"
-		tui-log $optVerb -t "$LOG" "FAS: Set output path: $DEST"
-	else 	#echo "Here would be the default output target" > /dev/zero
-		DEST="$DIR_OUT"
-		tui-log $optVerb -t "$LOG" "Default: Use output path: $DEST"
+	if [ 0 -eq $RET ]
+	then	#set -x
+		if $useFAS && [ -f "$HOME/.config/fas/fas.conf" ]
+		then	source $HOME/.config/fas/fas.conf
+			DEST="$FAS_REVIEW/$prj_name"
+			tui-log $optVerb -t "$LOG" "FAS: Set output path: $DEST"
+		else 	#echo "Here would be the default output target" > /dev/zero
+			DEST="$DIR_OUT"
+			tui-log $optVerb -t "$LOG" "Default: Use output path: $DEST"
+		fi
+		#set +x
+	#else	exit $RET
 	fi
-	[ -d "$DEST" ] || mkdir -p "$DEST"
-	[ -d "$DEST" ]
-	tui-status $? "Found destination: $DEST" || exit
+	tui-bol-dir -v "$DEST" || exit 1
+	#[ -d "$DEST" ] || mkdir -p "$DEST"
+	#[ -d "$DEST" ]
+	#tui-status $? "Found destination: $DEST" || exit
 	
 	rm -f "$TMP"
-	TMP="$TUI_DIR_CACHE/$prj_name.info"
-	tui-bol-dir "$TUI_DIR_CACHE" > /dev/zero
+	TMP="$TUI_DIR_TEMP/$prj_name.info"
+	tui-bol-dir "$TUI_DIR_TEMP" > /dev/zero
 	touch "$TMP"
 	$DS_DIR_MENU/prj/rpm/list $LBL "$TMP"
 	#ds prj rpm list $LBL "$TMP"
@@ -225,14 +233,14 @@
 		#ds prj rpm list $LBL "$TMP"
 		# Just parse the source file
 		cd $rpm_builddir
-		. /etc/os-release
+		source /etc/os-release
 		cp "$(find|$GREP \.src\.rpm$ |$GREP fc${VERSION_ID})" "$DEST" || exit 1
 		tui-log $optVerb -t "$LOG" "Start parsing: $TMP"
 		for line in $(grep "src.rpm" "$TMP");do
 			if [ ! -z "$line" ]
-			then	[ ! "/" = "${line:0:1}" ] && line="/$line"
+			then	[ ! "/" = "${line:0:1}" ] && line="./$line"
 				[ -f "$line" ] && \
-					lf="$(basename $line)" && \
+					lf="${line##*/})" && \
 						tui-cp "$line" "$DEST" && \
 						msg="Successfully copied" || \
 						msg="Failed to copy"
@@ -240,12 +248,13 @@
 				tui-log -t "$LOG" "$msg $DEST/$lf"
 			fi
 		done
-		[ -z "$LIST" ] || tui-cp "$line" "$DEST"
+		[ -z "$LIST" ] || ( [ ! -z "$line" ] && tui-cp "$line" "$DEST" )
 		cd "$OLDPWD"
 		tui-log $optVerb -t "$LOG" "End parsing: $TMP"
-	else	$DS_DIR_MENU/prj/rpm/list $LBL "$TMP"
+	else	$DS_DIR_MENU/prj/rpm/list "$LBL" "$TMP"
 		#ds prj rpm list $LBL "$TMP"
 		echo "" >> "$TMP"
+	#	echo here
 		# Copy all the files
 	#	while read line;do ## for line in $(cat "$TMP");do
 	#		if [ ! -z "$line" ]
@@ -258,7 +267,9 @@
 	#			tui-log -t "$LOG" "$msg $(basename $line)"
 	#		fi
 	#	done <"$TMP"
-		tui-cp $(cat "$TMP") "$DEST"
+		tmp_list=$(<"$TMP")
+	#	echo $tmp_list
+		tui-cp "$tmp_list" "$DEST"
 	fi
 	rm -fr "$TMP"
 	

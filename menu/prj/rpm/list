@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	. tui
+	. tuirc
 	. $HOME/.config/dev-scripts/dev-scripts.conf
 	. $HOME/.config/dev-scripts/rpm.conf
 	. /usr/share/dev-scripts/incl/*
@@ -125,8 +125,8 @@
 			cd "$rpm_builddir"
 			list=""
 			$doListSource && \
-				list=$(find |$GREP "$prj_name"|$GREP \.rpm | $GREP \.src\. 2>/dev/zero) # >$OF")
-			list+=$( find |$GREP "$prj_name"|$GREP \.rpm | $GREP -v \.src\. 2>/dev/zero) # >$OF" )
+				list=$(find |$GREP "$prj_name"|$GREP \.rpm | $GREP \.src\. |$GREP -v \.sh$ 2>/dev/zero) # >$OF")
+			list+=$( find |$GREP "$prj_name"|$GREP \.rpm | $GREP -ve \.sh$ -ve \.src\. 2>/dev/zero) # >$OF" )
 			
 			if [ ! -z "$OF" ]
 			then	# This works

@@ -25,7 +25,7 @@
 #
 #	Variables
 #
-	. tui
+	. tuirc
 	TITLE="Developer Scripts"
 	APP=dev-scripts
 	VERSION="0.3.5"
