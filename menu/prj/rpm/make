@@ -301,7 +301,7 @@
 		cd "$DEST"
 		#cd "$(dirname $item)"
 		tui-log -t "$LOG" "Attempting to install: $item"
-		tui-asroot "tui-install -y ./$item"
+		tui-asroot "tui-install -y $DEST/$item"
 		RET=$?
 		tui-log -t "$LOG" "Install exited with: $RET"
 		cd "$OLDPWD"
