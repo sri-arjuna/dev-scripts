@@ -24,7 +24,7 @@
 	. tuirc
 	#source /etc/tuirc && source "$HOME/.tuirc" && \
 	#	source "$TUI_FILE_CONF_COMMANDS" || . tuirc
-	script_version=0.8.10
+	script_version=0.8.11
 #
 #	Title
 #
@@ -96,8 +96,8 @@
 			exit $?
 		fi
 	fi
-	VER=$($GREP Version "$specfile"|awk '{print $2}')
-	TARBALL="$prj_name-$VER.$TAR_EXT"
+	VER=$($GREP Version "$specfile"|awk '{print $2}'|head -n1)
+	TARBALL="${prj_name}-${VER}.${TAR_EXT}"
 	DEST="$rpm_builddir"
 	[ -z "$rpm_cleandir" ] && rpm_cleandir=true
 #
@@ -175,13 +175,12 @@
 	
 	# Make the tarball
 	[ ! "" = "$($LS|$GREP '\.tar\.')" ] && rm *\.tar\.*
+	tui-log $optVerb -t "$LOG" "Starting to tar: $prj_name"
 	tui-tar "$prj_name"
-	TARBALL="$prj_name-$VER.$TAR_EXT"
 	mv "$prj_name.$TAR_EXT" "$DEST/SOURCES/$TARBALL" && \
 		msg="Moved $TARBALL to $DEST/SOURCES/$TARBALL" || \
 		msg="Failed to move / Could not find: $TARBALL"
 	tui-status $? "$msg"
-	# $tui-log $optVerb -t "$LOG" "$msg"
 	tui-log -t "$LOG" "$msg"
 	
 	# Execute the command
