@@ -1,9 +1,22 @@
-APP="dev-scripts"
-BINDIR=bin
-DOCDIR="docs/LICENSE docs/README.md"
-MAN1DIR=docs/man
-DATADIR="./incl ./menu ./templates"
-COMPLDIR=files/${APP}_compl.bash
-BUGS="erat.simon@gmail.com"
-ISSUE="https://github.com/sri-arjuna/$APP/issues"
-doRef=true
+#
+#	Project Info
+#
+	APP_NAME=dev-scripts
+	APP_VER=0.3.5
+	doRef=true
+	doTUI=true
+	doMakefile=true
+#
+#	Content
+#
+	BINDIR=bin
+	DOCDIR="docs/LICENSE docs/README.md"
+	MAN1DIR=docs/man
+	DATADIR="./incl ./menu ./templates"
+	COMPLDIR=files/${APP_NAME}_compl.bash
+#
+#	Contact
+#
+	AUTHOR_EMAIL="erat.simon@gmail.com"
+	BUGTRACKER="https://github.com/sri-arjuna/$APP/issues"
+
