@@ -65,7 +65,7 @@ For more details, see either one of:
 #
 #	Action
 #
-	tui 	-T "$TITLE" \
+	tui-browser 	-T "$TITLE" \
 			-D Section \
 			-F Commands \
 			-c "$DS_FILE_CONF" \

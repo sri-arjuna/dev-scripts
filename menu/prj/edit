@@ -20,7 +20,7 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.3
+	script_version=0.4
 #
 #	Title
 #
@@ -29,7 +29,7 @@
 #
 #	Variables
 #
-	. tui
+	. tuirc
 	if [ -z "$3" ] # || [ ! -z "$LBL" ]
 	then	if [ -d "$DIR_CFG/$1" ] && [ ! -z "$1" ]
 		then	LBL="$1"

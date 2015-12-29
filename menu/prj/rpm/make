@@ -20,11 +20,8 @@
 # ------------------------------------------------------------------------
 #
 #	
-	#set -x
 	. tuirc
-	#source /etc/tuirc && source "$HOME/.tuirc" && \
-	#	source "$TUI_FILE_CONF_COMMANDS" || . tuirc
-	script_version=0.8.11
+	script_version=0.9
 #
 #	Title
 #
@@ -74,7 +71,7 @@
 		if [ -d "$DIR_CFG/$1" ] && [ ! -z "$1" ]
 		then	LBL="$1"
 		else	tui-echo "Please select the label to work with:"
-			LBL=$(tui-select $($LS "$DIR_CFG"))
+			LBL=$(tui-select $(${LS:-\ls} "$DIR_CFG"))
 		fi
 	else	LBL="$4"
 	fi
@@ -111,9 +108,12 @@
 		other=${rel/*\%/}
 		num=$((num+1))
 		$SED s,"$rel","$num%$other",g -i "$specfile"
-		
-	#	( IFS='%{}';rel=$(echo ${rel}|$AWK '{print $1}' ; export rel num other ))
 		return $?
+	}
+	show_log() { 
+	#
+	#
+		tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG"
 	}
 #
 #	Display
@@ -167,17 +167,16 @@
 		else	tui-log $optVerb -t "$LOG" "Code for $prj_name not retrieved yet."
 			ds -q prj git clone "$LBL"
 		fi
-		#tui-log $optVerb -t "$LOG" "Changed from $OLDPWD (remoteOnly part) to $PWD"
 	fi
 	
 	cd "$prj_path/.."
 	tui-log $optVerb -t "$LOG" "Changed from $OLDPWD to $PWD"
 	
 	# Make the tarball
-	[ ! "" = "$($LS|$GREP '\.tar\.')" ] && rm *\.tar\.*
+	[ ! "" = "$(${LS:-\ls}|$GREP '\.tar\.')" ] && rm *\.tar\.*
 	tui-log $optVerb -t "$LOG" "Starting to tar: $prj_name"
-	tui-tar "$prj_name"
-	mv "$prj_name.$TAR_EXT" "$DEST/SOURCES/$TARBALL" && \
+	tui-tar -b "$prj_name" && \
+		mv "$prj_name.$TAR_EXT" "$DEST/SOURCES/$TARBALL" && \
 		msg="Moved $TARBALL to $DEST/SOURCES/$TARBALL" || \
 		msg="Failed to move / Could not find: $TARBALL"
 	tui-status $? "$msg"
@@ -198,26 +197,19 @@
 	[ 0 -eq "$RET" ] && \
 		word="Successfull" || \
 		word="Failed"
-	tui-log $optVerb -t "$LOG" "Build end: $word"
+	tui-log -t "$LOG" "Build end: $word"
+	tui-status $RET "Build end"
 	
 	# Optional task (fas)
-	if [ 0 -eq $RET ]
-	then	#set -x
-		if $useFAS && [ -f "$HOME/.config/fas/fas.conf" ]
-		then	source $HOME/.config/fas/fas.conf
-			DEST="$FAS_REVIEW/$prj_name"
-			tui-log $optVerb -t "$LOG" "FAS: Set output path: $DEST"
-		else 	#echo "Here would be the default output target" > /dev/zero
-			DEST="$DIR_OUT"
-			tui-log $optVerb -t "$LOG" "Default: Use output path: $DEST"
-		fi
-		#set +x
-	#else	exit $RET
+	if [ 0 -eq $RET ] && $useFAS && [ -f "$HOME/.config/fas/fas.conf" ]
+	then	source "$HOME/.config/fas/fas.conf"
+		DEST="$FAS_REVIEW/$prj_name"
+		tui-log $optVerb -t "$LOG" "FAS: Set output path: $DEST"
+	elif [ 0 -eq $RET ]
+	then	DEST="$DIR_OUT"
+		tui-log $optVerb -t "$LOG" "Default: Use output path: $DEST"
 	fi
 	tui-bol-dir -v "$DEST" || exit 1
-	#[ -d "$DEST" ] || mkdir -p "$DEST"
-	#[ -d "$DEST" ]
-	#tui-status $? "Found destination: $DEST" || exit
 	
 	rm -f "$TMP"
 	TMP="$TUI_DIR_TEMP/$prj_name.info"
@@ -229,11 +221,15 @@
 	
 	if $remoteOnly
 	then	$DS_DIR_MENU/prj/rpm/list -s $LBL "$TMP"
-		#ds prj rpm list $LBL "$TMP"
 		# Just parse the source file
 		cd $rpm_builddir
 		source /etc/os-release
-		cp "$(find|$GREP \.src\.rpm$ |$GREP fc${VERSION_ID})" "$DEST" || exit 1
+		whereFound="$(find|$GREP \.src\.rpm$ |$GREP fc${VERSION_ID})"
+		if [ -n "$whereFound" ]
+		then	cp "$whereFound" "$DEST"
+		else	[ false = $beVerbose ] && show_log
+			exit 1
+		fi
 		tui-log $optVerb -t "$LOG" "Start parsing: $TMP"
 		for line in $(grep "src.rpm" "$TMP");do
 			if [ ! -z "$line" ]
@@ -251,38 +247,21 @@
 		cd "$OLDPWD"
 		tui-log $optVerb -t "$LOG" "End parsing: $TMP"
 	else	$DS_DIR_MENU/prj/rpm/list "$LBL" "$TMP"
-		#ds prj rpm list $LBL "$TMP"
 		echo "" >> "$TMP"
-	#	echo here
-		# Copy all the files
-	#	while read line;do ## for line in $(cat "$TMP");do
-	#		if [ ! -z "$line" ]
-	#		then	[ ! "/" = "${line:0:1}" ] && line="/$line"
-	#			[ -f "$line" ] && \
-	#				cp "$line" "$DEST"/ && \
-	#					msg="Successfully copied" || \
-	#					msg="Failed to copy"
-	#			tui-status $? "* Copied" "$(basename $line)" 
-	#			tui-log -t "$LOG" "$msg $(basename $line)"
-	#		fi
-	#	done <"$TMP"
 		tmp_list=$(<"$TMP")
-	#	echo $tmp_list
 		tui-cp "$tmp_list" "$DEST"
 	fi
 	rm -fr "$TMP"
 	
 	# Copy the last files
 	tui-cp "$specfile" "$rpm_builddir/SOURCES/$TARBALL" "$DEST"
-	#cp  "$DEST"
-	#tui-status $? "* Copied" "$(basename $specfile)"
 	
 	# Increase build number if built was successfull
 	if [ 0 -eq $RET ]
 	then	increase_release
 		tui-status $? "Updated $specfile to build:" "Next: $($GREP -i "version:" "$specfile"|awk '{print $2}')-${num}"
 	elif [ false = $beVerbose ]
-	then	tui-yesno "Do you want to see the $LOG for details?" && tui-edit "$LOG"
+	then	show_log
 	fi
 	
 	

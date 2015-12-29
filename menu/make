@@ -21,11 +21,6 @@
 #
 #	Variables
 #
-	# BUGFIX, need tui-browser fix this first
-	#shift 1
-	. /etc/tui/commands.conf
-	. /etc/tui/status.conf
-	
 	LBL=""
 	VERBOSE=""
 	ARGS=""
@@ -50,10 +45,8 @@ Where options are:
 			hadOpts=true	;;
 		esac
 	done
-	#[[ -z "$ARGS" ]] || ARGS="-$ARGS"
 	$hadOpts && shift $(($OPTIND - 1))
 # Do this for every passed label
-	#echo $@ ; exit
 	for lbl in "${@}"
 	do	[ -z "$lbl" ] && LBL="" || LBL="$lbl"
 		[ -z "$LBL" ] || str=" ($LBL)"
@@ -72,25 +65,23 @@ Where options are:
 		old="$(pwd)"
 		cur="$DIR_CFG/$LBL"
 		source "$cur/$LBL.conf"
+		
 		cd "$cur"
 		switchMock=false
 		for L in $TASK_LIST;do 
-			#echo $L
 			[ -f "$L.conf" ] && \
 				LIST+=" $L" && \
 				[ $L = mock ] && \
 				switchMock=true
 		done
-		#echo $LIST
-
 		cd "$old"
-
-
+#
+#	Work through task list of project
+#
 		for T in $LIST;do
 			cmd="$(pwd)/prj"
 			add=""
-			#tui-title "Task ($T) for '$LBL' with: $(echo $LIST)"
-	#	set -x	
+			
 			if $switchMock
 			then	case $T in
 				mock)	T=rpm
@@ -102,7 +93,7 @@ Where options are:
 					;;
 				esac
 			fi
-	#	set +x
+			
 			case $T in
 			mock|git|rpm)
 				add="/$T/make"		;;
@@ -111,10 +102,11 @@ Where options are:
 		#	ks)	tui-echo "TODO: $T"
 		#		;;	
 			esac
-
-			#echo $cmd$add $ARGS
-			[ -z "$add" ] || $cmd$add $VERBOSE $ARGS $LBL
-			#[ -z "$add" ] || $cmd$add $LBL $VERBOSE
+			
+			if [ -n "$add" ] 
+			then	$cmd$add $VERBOSE $ARGS $LBL
+				[ $? -eq 1 ] && exit 1
+			fi
 		done
 	# All passed args have been handled
 	done

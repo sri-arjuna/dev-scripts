@@ -21,8 +21,8 @@
 #
 #	Variables
 #
-	. tui
-	script_version=0.7.9
+	. tuirc
+	script_version=0.8
 	TOTAL_RET=0
 	TOTAL_COUNT=0
 	TOTAL_SKIP=0
@@ -70,7 +70,8 @@
 	fi
 	source "$CONF_MOCK"
 	source "$DIR_CFG/$LBL/mock.conf"
-	touch "$TUI_FILE_TEMP"
+	TMP="$TUI_FILE_TEMP"
+	touch "$TMP"
 	OPTS="-$opt"
 	tui-log -e "$LOG" ""
 	tui-log -t "$LOG" "Loaded project: $prj_name ($LBL)"
@@ -86,14 +87,8 @@
 		fi
 		tui-log $optVerb -t "$LOG" "Found specfile in $specfile"
 	fi
-	VER=$($GREP Version "$specfile"|$AWK '{print $2}')
+	VER=$($GREP -i Version "$specfile"|$AWK '{print $2}')
 	tui-log $optVerb -t "$LOG" "Specfile-Version: $VER"
-#
-#	hasSudo ?
-#
-	sudo $GREP -q $USER /etc/sudoers 2>/dev/zero && \
-		hasSudo=true || \
-		hasSudo=false
 #
 #	Use the correct out path
 #
@@ -116,12 +111,13 @@
 #
 	# Was built by 'rpm'
 	# now looking for the latest...
-	[ -z "$TUI_DIR_CACHE" ] && exit 1
+	[ -z "$TUI_DIR_TEMP" ] && exit 1
 	#list=$(find | $GREP -e $prj_name -e $VER | $GREP \.src\.rpm$)
 	cd "$dir_out" && \
-		list=$(ls -1tv *src.rpm) && \
+		list=$($LS -1tv *src.rpm|$GREP $VER) && \
 		for l in $list;do s="$l";done && \
 		SRC="$dir_out/$s"
+tui-title "$SRC"
 	tui-log $optVerb -t "$LOG" "Generated source rpm list (${#list[@]})"
 	tui-log -t "$LOG" "list=$list"
 	tui-log -vt "$LOG" "Start builds using: $SRC"
@@ -139,9 +135,9 @@
 				T="$dist-$R-$A"
 				if [ -f "/etc/mock/$T.cfg" ]
 				then	TASKS+=" $prj_name-$T"
-					echo "mock --target=$A -r $T $SRC 1>/dev/zero 2>>$LOG_MOCK " > "$TUI_DIR_CACHE/$prj_name-$T"
-					#echo "[ 0 -eq \$? ] && msg=\"Successfully built\" || msg=\"Failed to build\"" >> "$TUI_DIR_CACHE/$prj_name-$T"
-					#echo "tui-log -t \"$LOG\" \"\$msg $prj_name-$T\"" >> "$TUI_DIR_CACHE/$prj_name-$T"
+					echo "mock --target=$A -r $T $SRC 1>/dev/zero 2>>$LOG_MOCK " > "$TUI_DIR_TEMP/$prj_name-$T"
+					#echo "[ 0 -eq \$? ] && msg=\"Successfully built\" || msg=\"Failed to build\"" >> "$TUI_DIR_TEMP/$prj_name-$T"
+					#echo "tui-log -t \"$LOG\" \"\$msg $prj_name-$T\"" >> "$TUI_DIR_TEMP/$prj_name-$T"
 					CHECK=$(($CHECK + 1))
 				else	tui-printf -rS 4 "Configuration for task \"$T\" does not exist."
 					TOTAL_SKIP=$(( $TOTAL_SKIP + 1 ))
@@ -152,57 +148,61 @@
 	#TASKS=$(echo $TASKS)
 	[ 0 -lt $TOTAL_SKIP ] && printf "\n"
 
+	tui-header
 	cd "$prj_path"
-	if $hasSudo
-	then	RET=0
-		for T in $TASKS;do
-			echo "" >> $LOG_MOCK
-			cat "$TUI_DIR_CACHE/$T" >> $LOG_MOCK
-			tui-log -t "$LOG" "Start building package for $T"
-			sudo tui-bgjob "$TUI_DIR_CACHE/$T" "Packaging $T" "Packaged $T" && \
-				rm "$TUI_DIR_CACHE/$T" && RET=$(($RET + 1))
-			RET=$?
-			# 
-			[ 0 -ne $RET ] && \
-				TOTAL_RET=$(( $TOTAL_RET + 1 )) && \
-					msg="Successfully built" || \
-					msg="Failed to build"
-			tui-log $optVerb -t "$LOG" "$msg: $prj_name-$T"
-			
-			TOTAL_COUNT=$(( $TOTAL_COUNT + 1 ))
-		done
-	else	# REQUIRES ROOT, NO SUDO AVAILABLE
-		cat > $TUI_FILE_TEMP << EOF
-for T in $TASKS;do
-	cat $TUI_DIR_CACHE/\$T >> $LOG_MOCK
-	tui-bgjob "\$TUI_DIR_CACHE/\$T" "Packaging \$T" "Packaged \$T" && rm $TUI_DIR_CACHE/\$T
-	[ 0 -ne \$? ] && \\
-			TOTAL_RET=$(( \$TOTAL_RET + 1 )) && \\
-			tui-filemgr /var/lib/mock/\$T/result
-	TOTAL_COUNT=$(( \$TOTAL_COUNT + 1 ))
-done
-export TOTAL_RET TOTAL_COUNT
-EOF
-		tui-echo "Please provide root password:"
-		su -c "sh $TUI_FILE_TEMP ; echo \$? > $TUI_FILE_TEMP"
-		RET=$(cat $TUI_FILE_TEMP)
-	fi
+	cat > "$TMP" <<-EOF
+	 	RET=0
+	 	for T in \$TASKS;do
+	 		echo "" >> \$LOG_MOCK
+	 		cat "\$TUI_DIR_TEMP/$T" >> $LOG_MOCK
+	 		tui-log -t "$LOG" "Start building package for \$T"
+	 		sudo tui-bgjob "\$TUI_DIR_TEMP/$T" "Packaging \$T" "Packaged \$T" && \\
+	 			rm "\$TUI_DIR_TEMP/\$T" && RET=\$((\$RET + 1))
+	 		RET=\$?
+	 		# 
+	 		[ 0 -ne \$RET ] && \
+	 			TOTAL_RET=\$(( \$TOTAL_RET + 1 )) && \\
+	 				msg="Successfully built" || \\
+	 				msg="Failed to build"
+	 		tui-log $optVerb -t "$LOG" "\$msg: \$prj_name-\$T"
+	 		
+	 		TOTAL_COUNT=\$(( \$TOTAL_COUNT + 1 ))
+	 	done
+	 	echo "$TOTAL_COUNT" > "$TMP.2"
+	EOF
+	tui-asroot "sh $TMP"
+	TOTAL_COUNT=$(<$TMP.2)
+#	else	# REQUIRES ROOT, NO SUDO AVAILABLE
+#		cat > $TUI_FILE_TEMP << EOF
+#for T in $TASKS;do
+#	cat $TUI_DIR_TEMP/\$T >> $LOG_MOCK
+#	tui-bgjob "\$TUI_DIR_TEMP/\$T" "Packaging \$T" "Packaged \$T" && rm $TUI_DIR_TEMP/\$T
+#	[ 0 -ne \$? ] && \\
+#			TOTAL_RET=$(( \$TOTAL_RET + 1 )) && \\
+#			tui-filemgr /var/lib/mock/\$T/result
+#	TOTAL_COUNT=$(( \$TOTAL_COUNT + 1 ))
+#done
+#export TOTAL_RET TOTAL_COUNT
+#EOF
+	#	tui-echo "Please provide root password:"
+	#	su -c "sh $TUI_FILE_TEMP ; echo \$? > $TUI_FILE_TEMP"
+	#	RET=$(cat $TUI_FILE_TEMP)
+	#fi
 #
 #	Moving files
 #
+	tui-header
 	cd /var/lib/mock
 	tui-log $optVerb -t "$LOG" "Changed from $OLDPWD to $PWD"
 	tui-echo
 	#tui-echo "Moving files??"
 	
-	
-	
-	if tui-bol-sudo
-	then	#list=$(sudo find| $GREP  "\\."rpm$|grep -v root)
-		list=$(find| $GREP  "\\."rpm$|$GREP -v root |$GREP -v debuginfo 2>/dev/zero)
-	else	tui-echo "Please provide root password to move files to:" "$dir_out"
-		su -c "list=$(find| $GREP  \\\\.rpm\\$|$GREP -v root|$GREP -v debuginfo);export list"
-	fi
+	echo "find| $GREP  "\\."rpm\$|$GREP -v root |$GREP -v debuginfo 2>/dev/zero >$TMP.2" > "$TMP"
+	tui-asroot "sh $TMP"
+	cat "$TMP.2" > "$TMP"
+	#tui-title
+	#	su -c "list=$(find| $GREP  \\\\.rpm\\$|$GREP -v root|$GREP -v debuginfo);export list"
+	#fi
 	tui-log $optVerb -t "$LOG" "Generated list of files to move"
 	# OLD
 		# result|grep -v debug |grep [46h]"\.rpm" 2>/dev/zero )  2>/dev/zero
@@ -218,13 +218,9 @@ EOF
 		tui-log -t "$LOG" "RAW: $list"
 		tui-log -t "$LOG" "Short: $LIST"
 		
-		if tui-bol-sudo
-		then	sudo chown -R $USER:$USER $LIST
+		if [ -n "$LIST" ]
+		then	tui-asroot "chown -R $USER:$USER $LIST"
 			RET=$?
-		else	tui-echo "Please provide root password to chown the packages for $USER" 
-			usr="$USER" 
-			export usr LIST 
-			su -c "chown -R $usr:$usr $LIST ; RET=\$?;export RET"
 		fi
 		tui-status $RET "Chowned packages."
 		
