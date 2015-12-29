@@ -63,7 +63,7 @@
 	then	# Could not figure the default out path
 		tui-echo "Could not find a default output directory for $prj_name"
 		prj_outpath=$(tui-read "Where shall dev-script place created rpm packages?")
-		[ -z "$prj_outpath" ] && tui-printf -S 1 "Must provide an output path!" && exit 1
+		[ -z "$prj_outpath" ] && tui-print -S 1 "Must provide an output path!" && exit 1
 		if [ ! -d "$prj_outpath" ]
 		then	tui-echo "Path \"$prj_outpath\" does not exist."
 			tui-yesno "Create it now?" && tui-bol-dir "$prj_outpath"

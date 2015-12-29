@@ -36,7 +36,7 @@
 		Edit)	tui-edit $SEA_DEV_DIR/$lbl/build	;;
 		Build)	build_label $lbl	;;
 		esac
-	else	tui-printf "Please select a Project:" "$PROGRESS"
+	else	tui-print "Please select a Project:" "$PROGRESS"
 		lbl=$(sea_select $(ls $SEA_DEV_DIR)) 
 		if [ -f $SEA_DEV_DIR/$lbl/build ]
 		then	moption=Edit

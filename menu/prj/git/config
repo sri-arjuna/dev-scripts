@@ -49,7 +49,7 @@
 #	Action & Display
 #
 	cd "$prj_path/.git"
-	tui-cat config
+	tui-printfile config
 	tui-echo TODO
 	#tui-conf-get -l config
 	#tui-conf-editor config

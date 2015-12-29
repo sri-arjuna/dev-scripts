@@ -80,7 +80,7 @@
 			git clone $URL "$prj_name"
 			tui-status $? "Retrieved lasted code" || exit 1
 			cd "$prj_name"
-		else	tui-printf -rS 2 "Pulling latest changes..."
+		else	tui-print -rS 2 "Pulling latest changes..."
 			git pull . 1>/dev/zero 2>/dev/zero
 			tui-status $? "Retrieved lasted code" || exit 1
 		fi

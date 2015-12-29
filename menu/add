@@ -89,7 +89,7 @@
 #echo "TESTING ----------------------------------------- TESTING"        
 	source "$thisConf"
 #	[ -z "$prj_path" ] && \
- #               tui-printf -S 1 "prj_path is empty" && \
+ #               tui-print -S 1 "prj_path is empty" && \
   #              cat "$thisConf" && \
    #             echo $prj_path $PRJ && \
     #            exit
@@ -121,7 +121,7 @@
 
 	tui-title "$OA_TITLE - Add the required modules"
 	for mod in $MODULES;do
-		#tui-printf "Parsing $mod" "$TUI_WORK"
+		#tui-print "Parsing $mod" "$TUI_WORK"
 		
 		case $mod in
 		"ssh")	# Needs special treatment

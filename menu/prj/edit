@@ -39,7 +39,7 @@
 	else	LBL="$3"
 	fi
 	[ -z "$LBL" ] && \
-		tui-printf -S 1 "Something went wrong.. missing label..." && \
+		tui-print -S 1 "Something went wrong.. missing label..." && \
 		exit 1 || \
 		source "$DIR_CFG/$LBL/$LBL.conf"
 #

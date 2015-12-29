@@ -109,18 +109,18 @@
 					then	tar -axf "$tarball"
 					elif [[ "zip" = "${tarball:0:(-3)}" ]]
 					then	unzip -uo "$tarball"
-					else	tui-printf -S 1 "Sorry cant handle $tarball yet!"
+					else	tui-print -S 1 "Sorry cant handle $tarball yet!"
 						exit 1
 					fi
 					[[ -f "$tarball" ]] && rm -fr "$tarball"
 				esac
 			fi
 		else	if [[ ! -f "$DIR_CFG/$LBL/livecd.conf" ]]
-			then	tui-printf -S 111 "TODO no rpm package?"
+			then	tui-print -S 111 "TODO no rpm package?"
 				tui-wait 5s "Please report if you see this message."
 			fi
 		fi
-	else	tui-printf -S 4 "Skipping GIT, make it so!"
+	else	tui-print -S 4 "Skipping GIT, make it so!"
 	fi
 	
 	exit 0

@@ -70,5 +70,5 @@
 			fi
 		else	git clone "$URL" "$prj_name" ; cd "$prj_name" 
 		fi
-	else	tui-printf -S $RET_TODO "Regular project"
+	else	tui-print -S $RET_TODO "Regular project"
 	fi

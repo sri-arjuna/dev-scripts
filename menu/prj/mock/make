@@ -139,7 +139,7 @@ tui-title "$SRC"
 					#echo "[ 0 -eq \$? ] && msg=\"Successfully built\" || msg=\"Failed to build\"" >> "$TUI_DIR_TEMP/$prj_name-$T"
 					#echo "tui-log -t \"$LOG\" \"\$msg $prj_name-$T\"" >> "$TUI_DIR_TEMP/$prj_name-$T"
 					CHECK=$(($CHECK + 1))
-				else	tui-printf -rS 4 "Configuration for task \"$T\" does not exist."
+				else	tui-print -rS 4 "Configuration for task \"$T\" does not exist."
 					TOTAL_SKIP=$(( $TOTAL_SKIP + 1 ))
 				fi
 			done
@@ -228,7 +228,7 @@ tui-title "$SRC"
 		tui-echo "Moving packages to $dir_out:"
 		tui-log $optVerb "$LOG" "Set outputdir: $dir_out"
 		for F in $LIST;do
-			tui-printf -rS 2 " * Moving: $(basename $F)"
+			tui-print -rS 2 " * Moving: $(basename $F)"
 			#mv -f "$F" "$dir_out"
 			mv "$F" "$dir_out"
 			tui-status $? " * Moved: $(basename $F)" && \
