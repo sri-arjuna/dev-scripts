@@ -20,7 +20,8 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.4
+	script_version=0.5
+	# Changed:	2015.12.30
 #
 #	Title
 #
@@ -45,4 +46,6 @@
 #
 #	Display
 #
-	tui-edit cd "$DIR_CFG/$LBL"/*conf
+	cd "$DIR_CFG/$LBL"
+	tui-edit *conf
+	cd "$OLDPWD"

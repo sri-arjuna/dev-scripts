@@ -20,7 +20,8 @@
 # ------------------------------------------------------------------------
 #
 #	
-	script_version=0.1
+	script_version=0.2
+	#Changed:	2015.12.30
 #
 #	Title
 #
@@ -35,12 +36,14 @@
 #
 #	Display
 #
+	items=$(\ls --ignore default* --ignore edit --ignore list $DS_DIR_MENU/prj)
 	for L in "${list[@]}";do
 		S=$(tui-conf-get "$L/$L.conf" "prj_name")
 		uses=""
-		for T in rpm livecd git
-		do	[[ -f "$L/$T.conf" ]] && \
+		for T in $items #build rpm mock livecd git
+		do	[ "$T" = "ks" ] && T=livecd
+			[[ -f "$L/$T.conf" ]] && \
 				uses+=" $T"
 		done
-		tui-echo "$S ($L) uses:" "$uses"
+		tui-print -E "$S ($L) uses:" "$uses"
 	done

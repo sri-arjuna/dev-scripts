@@ -2,18 +2,25 @@
 #	Project Info
 #
 	APP_NAME=dev-scripts
-	APP_VER=0.3.5
+	APP_TITLE="Developer Scripts"
+	APP_VER=0.4
 	doRef=true
 	doTUI=true
 	doMakefile=true
 #
 #	Content
 #
-	BINDIR=bin
+	BINDIR=ds
 	DOCDIR="docs/LICENSE docs/README.md"
 	MAN1DIR=docs/man
 	DATADIR="./incl ./menu ./templates"
 	COMPLDIR=files/${APP_NAME}_compl.bash
+#
+#	Advanced
+#
+	MAKE[0]="files/ds.tpl"
+	MAKE_CREATES=ds
+	DISTCLEAN[0]=$MAKE_CREATES
 #
 #	Contact
 #
